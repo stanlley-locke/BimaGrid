@@ -1,4 +1,4 @@
-================================================================================
+
 BIMAGRID Decentralized Parametric Climate Insurance Protocol
 
 ## TABLE OF CONTENTS
@@ -19,7 +19,7 @@ BIMAGRID Decentralized Parametric Climate Insurance Protocol
 14. Contributing
 15. License & Credits
 
-================================================================================ 1.
+ 1.
 PROJECT OVERVIEW
 
 BimaGrid is a standalone, decentralized, multi-peril parametric
@@ -41,7 +41,7 @@ preventing single points of failure
 MISSION: Turn satellite data into instant liquidity for the farmer who
 needs it most--- without a single human in the loop.
 
-================================================================================
+
 2. PROBLEM STATEMENT
 
 Traditional agricultural insurance fails smallholder farmers due to:
@@ -62,7 +62,7 @@ D. DATA VULNERABILITY - Single API feeds create single points of
 failure - No cryptographic proof of data integrity - Regulators cannot
 independently verify payouts
 
-================================================================================
+
 3. ARCHITECTURE OVERVIEW
 
 BimaGrid operates on a three-plane architecture:
@@ -95,7 +95,7 @@ Signature verification (ecrecover) │ │ • Consensus threshold evaluation
 • Immutable audit trail │
 └─────────────────────────────────────────────────────────────────────────┘
 
-================================================================================
+
 4. TECHNICAL STACK
 
 BACKEND SERVICES: - Django 4.2 (Python 3.10+) - Operational Data Plane -
@@ -118,7 +118,7 @@ Talking USSD/SMS APIs - M-Pesa Daraja API (B2C payments)
 INFRASTRUCTURE: - Docker & Docker Compose - Nginx (reverse proxy) -
 Let's Encrypt (SSL) - AWS S3 (document storage) - Cloudflare (CDN)
 
-================================================================================
+
 5. INSTALLATION & SETUP
 
 PREREQUISITES: - Docker 24.0+ - Docker Compose 2.20+ - Python 3.10+ -
@@ -174,7 +174,7 @@ oracle-config-3.toml &
 STEP 10: VERIFY SYSTEM \$ curl http://localhost/api/health Expected:
 {"status": "healthy", "version": "1.0.0"}
 
-================================================================================
+
 6. SYSTEM COMPONENTS
 
 ## 6.1 DJANGO OPERATIONAL DATA PLANE
@@ -222,7 +222,7 @@ Deployment Addresses (localhost): - Oracle:
 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512 - EscrowVault:
 0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0
 
-================================================================================
+
 7. API DOCUMENTATION
 
 BASE URL: http://localhost/api/v1/
@@ -262,7 +262,7 @@ PAYOUT TRIGGER (Webhook from Smart Contract) POST
 "amount_kes": 5000.00, "tx_hash": "0xdef456...", "event":
 "PayoutAuthorized" }
 
-================================================================================
+
 8. SMART CONTRACT SPECIFICATION
 
 CONTRACT: KilimaShieldOracle ADDRESS:
@@ -304,7 +304,7 @@ GAS OPTIMIZATION: - Uses storage packing for policy structs - Median
 calculation uses sorting network (no loops) - Batch payout processing
 for multiple policies in same hexagon
 
-================================================================================
+
 9. ORACLE NODE ARCHITECTURE
 
 NODE EXECUTION FLOW:
@@ -370,7 +370,7 @@ Box`<dyn std::error::Error>`{=html}\> {
 
 }
 
-================================================================================
+
 10. DATA PIPELINE
 
 ## 10.1 SATELLITE DATA VIA openEO
@@ -431,7 +431,7 @@ Calculate frost days (temp \< 2°C) - Calculate heat stress days (temp \>
 35°C during flowering) 2. Store in grid_risk PostGIS table 3. Query
 during premium calculation
 
-================================================================================
+
 11. DEPLOYMENT GUIDE
 
 PRODUCTION DEPLOYMENT (AWS Example):
@@ -475,7 +475,7 @@ Celery: Auto-scaling group (2-20 workers based on queue depth) - Oracle
 Nodes: Fixed 3 instances (consensus requirement) - Database: Read
 replicas for query scaling
 
-================================================================================
+
 12. DEMO INSTRUCTIONS
 
 HACKATHON DEMO SETUP:
@@ -535,7 +535,7 @@ POST /api/admin/trigger-evaluation/ { "h3_index": "8928308280fffff" }
 
 POST /api/admin/bypass-payment/ { "policy_id": "POL-98765" }
 
-================================================================================
+
 13. TESTING
 
 UNIT TESTS:
@@ -565,7 +565,7 @@ tests/load/ussd_load_test.py --host=http://localhost
 
 Simulate Oracle node throughput: \$ cd oracle-node \$ cargo bench
 
-================================================================================
+
 14. CONTRIBUTING
 
 DEVELOPMENT WORKFLOW:
@@ -593,7 +593,7 @@ refactor: Code change that neither fixes a bug nor adds a feature -
 test: Adding missing tests - chore: Changes to build process or
 auxiliary tools
 
-================================================================================
+
 15. LICENSE & CREDITS
 
 LICENSE: Apache License 2.0
@@ -616,7 +616,7 @@ Earth Engine - Geospatial processing
 Partners: - Insurance Regulatory Authority (IRA) Kenya - African Risk
 Capacity (ARC) - Swiss Re Institute
 
-================================================================================
+
 END OF README
 
 For questions, contact: \[stanlleylocke@gmail.com\] Documentation:
