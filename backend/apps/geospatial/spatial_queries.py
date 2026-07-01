@@ -1,0 +1,1 @@
+"""Geospatial spatial queries placeholder."""

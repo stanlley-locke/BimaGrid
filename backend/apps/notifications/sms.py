@@ -1,0 +1,1 @@
+"""Notifications SMS placeholder."""

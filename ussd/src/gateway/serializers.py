@@ -1,0 +1,1 @@
+"""USSD gateway serializers placeholder."""

@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bimagrid-backend"
+version = "0.1.0"
+description = "BimaGrid backend scaffold"
+dependencies = [
+	"Django>=4.2,<5",
+	"djangorestframework",
+	"django-cors-headers",
+	"django-environ",
+	"psycopg[binary]",
+	"redis",
+	"celery",
+	"django-filter",
+]
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["config*", "apps*", "middleware*"]

@@ -1,0 +1,677 @@
+# BimaGrid Tech Stack
+
+## Document Metadata
+
+| Field | Value |
+| --- | --- |
+| Document Version | 1.0.0 |
+| Last Updated | July 1, 2026 |
+| Maintainer | BimaGrid Engineering Team |
+
+## Table of Contents
+
+1. Executive Summary
+2. Backend Stack (Operational Data Plane)
+3. Oracle Node Stack (Consensus Plane)
+4. Smart Contract Stack (Execution Plane)
+5. Frontend Stack
+6. USSD & SMS Stack
+7. Satellite & Geospatial Stack
+8. Infrastructure & DevOps Stack
+9. Database Stack
+10. Testing & Quality Assurance Stack
+11. Monitoring & Observability Stack
+12. Security Stack
+13. Third-Party API Stack
+14. Development Tools Stack
+15. Stack Rationale & Decision Log
+
+## 1. Executive Summary
+
+BimaGrid's technology stack is engineered around four core principles:
+
+1. Determinism: Every payout decision must be reproducible and verifiable.
+2. Resilience: No single point of failure in data ingestion or execution.
+3. Scalability: Handle 100,000+ smallholder policies without degradation.
+4. Auditability: Every state transition cryptographically signed and logged.
+
+The stack is deliberately heterogeneous, using the best tool for each plane of the architecture rather than forcing a single language or framework.
+
+## 2. Backend Stack (Operational Data Plane)
+
+### Core Framework
+
+- Django 4.2.7 (LTS)
+  - Rationale: Mature ORM, admin interface, rapid development, PostGIS native
+- Python 3.11.6
+  - Rationale: Performance improvements over 3.10, long-term support
+
+### Web Server
+
+- Gunicorn 21.2.0 (WSGI server)
+- Uvicorn 0.24.0 (ASGI server for WebSocket endpoints)
+- Nginx 1.25.3 (Reverse proxy, static files, SSL termination)
+
+### Database Interaction
+
+- Django ORM (primary)
+- Django-PostGIS 3.3.4 (Geospatial queries)
+- Raw SQL via django.db.connection (complex spatial joins)
+- Redis 7.2.3 (Caching, session storage, Celery broker)
+
+### Async Task Processing
+
+- Celery 5.3.4 (Distributed task queue)
+- Celery Beat 2.5.0 (Periodic task scheduler)
+- Flower 2.0.1 (Celery monitoring dashboard)
+
+### API Layer
+
+- Django REST Framework 3.14.0
+- drf-spectacular 0.27.0 (OpenAPI 3.0 schema generation)
+- django-cors-headers 4.3.1 (CORS management)
+- djangorestframework-simplejwt 5.3.0 (JWT authentication)
+
+### Authentication & Authorization
+
+- django-allauth 0.58.2 (Social auth, email verification)
+- django-otp 1.2.2 (Two-factor authentication for admin)
+- django-guardian 2.4.0 (Object-level permissions)
+
+### Data Validation
+
+- pydantic 2.5.2 (Complex data validation)
+- marshmallow 3.20.1 (Serialization/deserialization)
+- django-cleanup 8.0.0 (File cleanup on model updates)
+
+### File & Document Storage
+
+- django-storages 1.14.2 (S3-compatible storage abstraction)
+- boto3 1.34.0 (AWS S3 SDK)
+- Pillow 10.1.0 (Image processing for EXIF extraction)
+- pHash 0.1.0 (Perceptual hashing for duplicate detection)
+
+### Geospatial Processing
+
+- GeoDjango (Built-in GIS framework)
+- Shapely 2.0.2 (Geometry operations)
+- h3-py 3.7.6 (Uber's H3 hexagonal indexing)
+- pyproj 3.6.1 (Coordinate system transformations)
+- rasterio 1.3.9 (Raster data handling)
+- fiona 1.9.5 (Vector data I/O)
+
+### Utilities
+
+- python-decouple 3.8 (Environment variable management)
+- django-environ 0.11.2 (Environment configuration)
+- python-slugify 8.0.1 (URL-friendly string generation)
+- phonenumbers 8.13.26 (Phone number validation/parsing)
+
+## 3. Oracle Node Stack (Consensus Plane)
+
+### Core Language
+
+- Rust 1.74.0 (Stable)
+  - Rationale: Memory safety, zero-cost abstractions, async performance
+
+### Async Runtime
+
+- tokio 1.35.0 (Async runtime with multi-threaded scheduler)
+- tokio-util 0.7.10 (Additional async utilities)
+- futures 0.3.29 (Async/await primitives)
+
+### HTTP Client
+
+- reqwest 0.11.23 (Async HTTP with TLS support)
+- hyper 0.14.28 (Underlying HTTP implementation)
+
+### Blockchain Interaction
+
+- ethers-rs 0.12.0 (Ethereum library for Rust)
+  - ethers-core: Core types and utilities
+  - ethers-providers: JSON-RPC provider
+  - ethers-signers: Local wallet and signing
+  - ethers-contract: Contract ABI bindings
+- alloy-primitives 0.6.0 (Primitive types for Ethereum)
+
+### Cryptography
+
+- sha2 0.10.8 (SHA-256 implementation)
+- sha3 0.10.8 (Keccak-256 for Ethereum compatibility)
+- k256 0.13.3 (Secp256k1 elliptic curve)
+- elliptic-curve 0.13.8 (Generic ECC traits)
+- rand 0.8.5 (Cryptographically secure RNG)
+
+### Serialization
+
+- serde 1.0.193 (Serialization framework)
+- serde_json 1.0.108 (JSON handling)
+- toml 0.8.8 (Configuration file parsing)
+- bincode 1.3.3 (Binary serialization)
+
+### Error Handling
+
+- thiserror 1.0.51 (Derive macro for error types)
+- anyhow 1.0.76 (Flexible error handling)
+- tracing 0.1.40 (Structured logging)
+- tracing-subscriber 0.3.18 (Log output formatting)
+
+### Time & Date
+
+- chrono 0.4.31 (Date/time handling with timezone support)
+- humantime 2.1.0 (Human-readable time formatting)
+
+### Configuration
+
+- config 0.13.4 (Multi-format configuration)
+- dotenvy 0.15.7 (Environment variable loading)
+
+### Webserver for God Mode Admin API
+
+- axum 0.7.2 (Web framework)
+- tower 0.4.13 (Middleware stack)
+- tower-http 0.5.0 (HTTP-specific middleware)
+
+### Testing
+
+- tokio-test 0.4.3 (Async testing utilities)
+- mockall 0.12.0 (Mocking framework)
+- proptest 1.4.0 (Property-based testing)
+
+## 4. Smart Contract Stack (Execution Plane)
+
+### Language
+
+- Solidity 0.8.23
+  - Rationale: Latest stable version with overflow protection, custom errors
+
+### Development Framework
+
+- Hardhat 2.19.2
+  - Rationale: Fast compilation, excellent debugging, plugin ecosystem
+- Foundry 0.2.0 (Alternative for gas optimization testing)
+
+### Security Libraries
+
+- OpenZeppelin Contracts 5.0.1
+  - AccessControl.sol (Role-based permissions)
+  - ECDSA.sol (Signature verification)
+  - ReentrancyGuard.sol (Reentrancy protection)
+  - Pausable.sol (Emergency stop mechanism)
+
+### Testing
+
+- Chai 4.3.10 (Assertion library)
+- Mocha 10.2.0 (Test runner)
+- ethers.js 6.9.0 (JavaScript Ethereum library)
+- hardhat-gas-reporter 1.0.9 (Gas usage reporting)
+- solidity-coverage 0.8.5 (Test coverage)
+
+### Code Quality
+
+- Solhint 4.0.0 (Solidity linter)
+- Prettier 3.1.1 (Code formatting)
+- prettier-plugin-solidity 1.2.0 (Solidity formatting)
+- Slither 0.9.5 (Static analysis)
+- Mythril 0.24.4 (Security analysis)
+
+### Dependency Management
+
+- npm 10.2.4 (Node package manager)
+- @openzeppelin/contracts 5.0.1
+
+## 5. Frontend Stack
+
+### Core Framework
+
+- React 18.2.0
+  - Rationale: Component-based, large ecosystem, team familiarity
+- Next.js 14.0.4 (React framework with SSR/SSG)
+- TypeScript 5.3.3 (Type safety)
+
+### State Management
+
+- Zustand 4.4.7 (Lightweight state management)
+- React Query 5.13.4 (Server state management)
+- React Hook Form 7.48.2 (Form state)
+
+### Styling
+
+- TailwindCSS 3.4.0 (Utility-first CSS)
+- Headless UI 1.7.17 (Unstyled accessible components)
+- Radix UI 1.0.0 (Accessible component primitives)
+- Framer Motion 10.16.16 (Animations)
+
+### Map & Geospatial
+
+- Mapbox GL JS 3.0.1 (Interactive maps)
+- react-map-gl 7.1.7 (React bindings for Mapbox)
+- Turf.js 6.5.0 (Geospatial analysis in browser)
+
+### Data Visualization
+
+- Recharts 2.10.3 (Charts and graphs)
+- D3.js 7.8.5 (Custom visualizations)
+
+### HTTP Client
+
+- Axios 1.6.2 (HTTP requests)
+- SWR 2.2.4 (Data fetching)
+
+### Utilities
+
+- date-fns 2.30.0 (Date manipulation)
+- lodash 4.17.21 (Utility functions)
+- zod 3.22.4 (Schema validation)
+- react-hot-toast 2.4.1 (Toast notifications)
+
+### Build Tools
+
+- Vite 5.0.8 (Build tool)
+- ESLint 8.55.0 (Linting)
+- Prettier 3.1.1 (Formatting)
+
+## 6. USSD & SMS Stack
+
+### Provider
+
+- Africa's Talking API v1.1
+  - USSD Gateway: Session-based text menus
+  - SMS Gateway: Inbound/outbound messaging
+  - Voice API: IVR for low-literacy users (future)
+
+### SDK
+
+- africastalking-python 1.2.5 (Official Python SDK)
+
+### Session Management
+
+- Django session backend (Redis-backed)
+- Custom state machine for USSD flow
+- Session timeout: 180 seconds (Africa's Talking limit)
+
+### Message Formatting
+
+- Plain text responses
+- CON prefix (continue session)
+- END prefix (terminate session)
+- Max 160 characters per screen (SMS limit)
+
+### Webhook Handling
+
+- Django views for callback URLs
+- CSRF exemption for Africa's Talking callbacks
+- Request validation (signature verification)
+
+## 7. Satellite & Geospatial Stack
+
+### Satellite Processing
+
+- openEO Python Client 1.7.0
+  - Backends: Google Earth Engine, Sentinel Hub, VITO
+  - Process graph execution on remote servers
+  - Batch job management
+
+### Earth Observation Data
+
+- CHIRPS (Climate Hazards Group InfraRed Precipitation with Station data)
+  - Resolution: 0.05° (~5km)
+  - Variables: Precipitation
+  - Latency: 1-3 days (final), real-time (CHIRPS-RT)
+
+- Sentinel-2 (ESA)
+  - Resolution: 10m (visible), 20m (red edge), 60m (atmospheric)
+  - Revisit: 5 days
+  - Variables: 13 spectral bands
+
+- Sentinel-1 (ESA)
+  - Resolution: 10m
+  - Type: SAR (Synthetic Aperture Radar)
+  - Variables: VV, VH polarization
+  - All-weather capability
+
+- NASA POWER
+  - Resolution: 0.5° × 0.625°
+  - Variables: Temperature, humidity, wind, solar radiation
+
+- ERA5 (ECMWF)
+  - Resolution: 31km
+  - Variables: Comprehensive atmospheric reanalysis
+  - Historical: 1940-present
+
+### Geospatial Indexing
+
+- H3 (Uber's Hexagonal Hierarchical Spatial Index)
+  - Resolution 4: ~100km² (regional pricing)
+  - Resolution 7: ~5km² (CHIRPS alignment)
+  - Resolution 9: ~0.1km² (farm-level policies)
+
+### Coordinate Systems
+
+- WGS84 (EPSG:4326) - GPS coordinates
+- Web Mercator (EPSG:3857) - Web maps
+- UTM zones - Local projections for area calculations
+
+## 8. Infrastructure & DevOps Stack
+
+### Containerization
+
+- Docker 24.0.7
+- Docker Compose 2.23.3
+- Multi-stage builds for optimized images
+
+### Orchestration (Production)
+
+- AWS ECS Fargate (Container orchestration)
+- AWS ECR (Container registry)
+- Kubernetes 1.28 (Alternative for multi-cloud)
+
+### Infrastructure as Code
+
+- Terraform 1.6.6 (Cloud resource provisioning)
+- Ansible 2.16.2 (Configuration management)
+- Packer 1.10.0 (Machine image building)
+
+### CI/CD
+
+- GitHub Actions (Primary CI/CD)
+- Pre-commit hooks (Local code quality)
+- Dependabot (Dependency updates)
+
+### Cloud Provider
+
+- AWS (Primary)
+  - EC2 (Compute)
+  - RDS (Managed PostgreSQL)
+  - ElastiCache (Managed Redis)
+  - S3 (Object storage)
+  - CloudFront (CDN)
+  - Route53 (DNS)
+  - ACM (SSL certificates)
+  - Secrets Manager (Secret storage)
+  - CloudWatch (Monitoring)
+
+### DNS & SSL
+
+- Cloudflare (DNS, DDoS protection, CDN)
+- Let's Encrypt (Free SSL certificates)
+- Certbot (Automated certificate renewal)
+
+## 9. Database Stack
+
+### Primary Database
+
+- PostgreSQL 15.5
+  - Rationale: ACID compliance, JSONB support, PostGIS extension
+
+### Geospatial Extension
+
+- PostGIS 3.4.0
+  - Geometry and geography types
+  - Spatial indexes (GiST)
+  - Spatial functions (ST_Intersects, ST_DWithin, etc.)
+
+### Caching
+
+- Redis 7.2.3
+  - Session storage
+  - Celery message broker
+  - Rate limiting
+  - Real-time pub/sub
+
+### Search (Future)
+
+- Elasticsearch 8.11.3 (Full-text search)
+- Meilisearch 1.5.0 (Lightweight alternative)
+
+### Migrations
+
+- Django migrations (Built-in)
+- Alembic 1.13.0 (For Rust services if needed)
+
+### Backup
+
+- pg_dump (Logical backups)
+- WAL-E (Continuous archiving)
+- AWS RDS automated snapshots
+
+## 10. Testing & Quality Assurance Stack
+
+### Unit Testing
+
+- pytest 7.4.3 (Python testing)
+- pytest-django 4.7.0 (Django integration)
+- pytest-cov 4.1.0 (Coverage reporting)
+- pytest-asyncio 0.23.2 (Async test support)
+- cargo test (Rust built-in)
+- Hardhat test (Solidity)
+
+### Integration Testing
+
+- pytest with testcontainers (Docker-based test environments)
+- Factory Boy 3.3.0 (Test data generation)
+- Faker 20.1.0 (Fake data generation)
+
+### End-to-End Testing
+
+- Playwright 1.40.0 (Browser automation)
+- Cypress 13.6.1 (Alternative E2E framework)
+
+### Load Testing
+
+- Locust 2.20.0 (Python load testing)
+- k6 0.48.0 (JavaScript load testing)
+- Apache JMeter 5.6.3 (Enterprise load testing)
+
+### Mocking
+
+- responses 0.24.1 (Mock HTTP requests in Python)
+- unittest.mock (Built-in Python mocking)
+- mockall (Rust mocking)
+
+### Code Quality
+
+- black 23.12.1 (Python code formatter)
+- isort 5.13.2 (Import sorting)
+- flake8 6.1.0 (Python linting)
+- mypy 1.7.1 (Static type checking)
+- clippy (Rust linting)
+- rustfmt (Rust formatting)
+
+## 11. Monitoring & Observability Stack
+
+### Logging
+
+- structlog 23.2.0 (Structured logging for Python)
+- tracing (Rust structured logging)
+- AWS CloudWatch Logs (Log aggregation)
+
+### Metrics
+
+- Prometheus 2.48.1 (Metrics collection)
+- Grafana 10.2.3 (Metrics visualization)
+- django-prometheus 2.3.1 (Django metrics exporter)
+
+### Distributed Tracing
+
+- OpenTelemetry 1.21.0 (Tracing standard)
+- Jaeger 1.53 (Trace visualization)
+- AWS X-Ray (Cloud-native tracing)
+
+### Error Tracking
+
+- Sentry 23.12.1 (Error monitoring)
+- sentry-sdk 1.39.1 (Python SDK)
+
+### Uptime Monitoring
+
+- UptimeRobot (External uptime checks)
+- Healthchecks.io (Cron job monitoring)
+
+### Alerting
+
+- PagerDuty (Incident management)
+- Slack webhooks (Team notifications)
+- AWS SNS (SMS/email alerts)
+
+## 12. Security Stack
+
+### Application Security
+
+- django-security (Security headers)
+- django-csp (Content Security Policy)
+- django-ratelimit (Rate limiting)
+- bleach 6.1.0 (HTML sanitization)
+
+### Cryptography
+
+- cryptography 41.0.7 (Python crypto library)
+- PyNaCl 1.5.0 (Sodium encryption)
+- python-jose 3.3.0 (JWT handling)
+
+### Secret Management
+
+- AWS Secrets Manager (Production secrets)
+- HashiCorp Vault (Alternative)
+- python-dotenv (Development secrets)
+
+### Dependency Scanning
+
+- Safety 2.3.5 (Python vulnerability scanning)
+- cargo-audit (Rust vulnerability scanning)
+- npm audit (Node.js vulnerability scanning)
+- Snyk (Multi-language scanning)
+
+### Compliance
+
+- django-auditlog 2.3.0 (Model change tracking)
+- AWS Config (Infrastructure compliance)
+
+## 13. Third-Party API Stack
+
+### Telecommunications
+
+- Africa's Talking (USSD, SMS, Voice)
+- Safaricom Daraja (M-Pesa payments)
+
+### Government Integrations
+
+- IPRS (Integrated Population Registration System)
+- ArdhiSasa (National land registry)
+
+### Weather & Climate
+
+- CHIRPS (UC Santa Barbara)
+- NASA POWER (NASA)
+- Open-Meteo (Open-source weather API)
+- OpenWeatherMap (Commercial weather API)
+
+### Satellite & Earth Observation
+
+- openEO (Serverless EO processing)
+- Sentinel Hub (Satellite data access)
+- Google Earth Engine (Geospatial analysis)
+
+### Blockchain
+
+- Custom Rust blockchain (Primary)
+- Ethereum JSON-RPC (Compatibility layer)
+
+### Cloud Storage
+
+- AWS S3 (Document and image storage)
+- Cloudflare R2 (Alternative S3-compatible)
+
+## 14. Development Tools Stack
+
+### Version Control
+
+- Git 2.43.0
+- GitHub (Repository hosting)
+- GitHub Desktop (GUI client)
+
+### IDE & Editors
+
+- VS Code 1.85.1 (Primary editor)
+- PyCharm 2023.3 (Python development)
+- RustRover 2023.3 (Rust development)
+- Remix IDE (Solidity development)
+
+### Extensions
+
+- Python (VS Code)
+- Rust Analyzer (VS Code)
+- Solidity (VS Code)
+- Docker (VS Code)
+- GitLens (VS Code)
+- Prettier (VS Code)
+- ESLint (VS Code)
+
+### Database Tools
+
+- pgAdmin 4 (PostgreSQL GUI)
+- DBeaver 23.3.0 (Universal database tool)
+- RedisInsight 2.36.0 (Redis GUI)
+
+### API Testing
+
+- Postman 10.20.0 (API client)
+- Insomnia 8.5.1 (Alternative API client)
+- httpie 3.2.2 (Command-line HTTP client)
+
+### Documentation
+
+- MkDocs 1.5.3 (Documentation generator)
+- MkDocs Material 9.5.3 (Theme)
+- Swagger UI (OpenAPI visualization)
+
+## 15. Stack Rationale & Decision Log
+
+### Why Django Over FastAPI?
+
+- Mature ORM with excellent PostGIS integration
+- Built-in admin interface for rapid prototyping
+- Large ecosystem of battle-tested packages
+- Team familiarity and hiring pool
+
+### Why Rust Over Python for Oracles?
+
+- Memory safety without garbage collection overhead
+- Zero-cost abstractions for cryptographic operations
+- Excellent async performance with tokio
+- Type safety catches errors at compile time
+- Lower cloud compute costs at scale
+
+### Why Custom Blockchain Over Ethereum Mainnet?
+
+- Zero gas fees for oracle submissions
+- Instant finality (no 12-second block times)
+- Full control over consensus mechanism
+- No dependency on external network congestion
+- Can be optimized for specific use case
+
+### Why H3 Over Standard Grids?
+
+- Hexagons have uniform shape and size
+- 7 neighbors (vs 8 for squares) reduces edge effects
+- Hierarchical resolution allows multi-scale analysis
+- Uber-maintained with excellent Python/Rust bindings
+- Industry standard for geospatial indexing
+
+### Why openEO Over Direct Satellite Downloads?
+
+- Serverless processing, no local compute requirements
+- Pay-per-use pricing model
+- Access to multiple backends (GEE, Sentinel Hub, VITO)
+- Standardized API across providers
+- Handles petabytes of data without bandwidth issues
+
+### Why USSD Over Mobile App?
+
+- Works on basic feature phones (90% of rural Kenya)
+- No internet connection required
+- No app download or storage space needed
+- Familiar interface for rural users
+- Lower barrier to adoption
+
+## End of Document

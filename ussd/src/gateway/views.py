@@ -1,0 +1,1 @@
+"""USSD gateway views placeholder."""

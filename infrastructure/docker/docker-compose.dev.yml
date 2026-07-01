@@ -1,0 +1,18 @@
+services:
+
+  backend:
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ../../backend:/app/backend
+      - backend-static:/app/backend/staticfiles
+      - backend-media:/app/backend/media
+    environment:
+      DEBUG: "true"
+      DJANGO_SETTINGS_MODULE: config.settings.development
+
+  nginx:
+    profiles: ["proxy"]
+
+volumes:
+  backend-static:
+  backend-media:

@@ -1,0 +1,1 @@
+"""Verification image analysis placeholder."""

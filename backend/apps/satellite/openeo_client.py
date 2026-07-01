@@ -1,0 +1,1 @@
+"""Satellite openEO client placeholder."""
