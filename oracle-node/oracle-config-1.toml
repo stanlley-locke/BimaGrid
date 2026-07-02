@@ -1,0 +1,22 @@
+# BimaGrid Oracle Node Configuration
+# Copy to oracle-config-1.toml and customize per node
+
+[node]
+id = "oracle-1"
+# gRPC endpoint for the Django backend
+backend_url = "http://localhost:50051"
+data_sources = ["open-meteo", "nasa-power", "chirps"]
+# secp256k1 private key (hex) — NEVER commit a real key
+signing_key = "0x47e175b104810481048104810481048104810481048104810481048104810481"
+
+[blockchain]
+rpc_url = "http://localhost:8545"
+contract_address = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+gas_limit = 500000
+
+[schedule]
+# Time of day to run the daily evaluation cycle (EAT = UTC+3)
+evaluation_time = "23:00"
+timezone = "Africa/Nairobi"
+# Interval in seconds for development polling (set to 86400 in production)
+poll_interval_secs = 60

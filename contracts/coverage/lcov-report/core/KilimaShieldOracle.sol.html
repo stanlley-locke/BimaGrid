@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for core/KilimaShieldOracle.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../prettify.css" />
+    <link rel="stylesheet" href="../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../index.html">all files</a> / <a href="index.html">core/</a> KilimaShieldOracle.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">95.45% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>42/44</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">58.33% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>21/36</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">100% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>6/6</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">95.83% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>46/48</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line high'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">15×</span>
+<span class="cline-any cline-yes">15×</span>
+<span class="cline-any cline-yes">15×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">15×</span>
+<span class="cline-any cline-yes">15×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8×</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// SPDX-License-Identifier: Apache-2.0
+pragma solidity ^0.8.20;
+&nbsp;
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "./PolicyRegistry.sol";
+import "./EscrowVault.sol";
+import "../libraries/ECDSA.sol";
+import "../libraries/H3.sol";
+&nbsp;
+contract KilimaShieldOracle is Ownable {
+    struct DataPayload {
+        uint256 rainfall;
+        uint256 ndvi;
+        bool exists;
+    }
+&nbsp;
+    PolicyRegistry public policyRegistry;
+    EscrowVault public escrowVault;
+&nbsp;
+    // Authorized oracles
+    mapping(address =&gt; bool) public isAuthorizedOracle;
+    uint256 public oracleCount;
+&nbsp;
+    // h3Index =&gt; timestamp =&gt; oracleAddress =&gt; DataPayload
+    mapping(bytes32 =&gt; mapping(uint256 =&gt; mapping(address =&gt; DataPayload))) public submissions;
+    
+    // h3Index =&gt; timestamp =&gt; list of oracle addresses who submitted
+    mapping(bytes32 =&gt; mapping(uint256 =&gt; address[])) public submitters;
+&nbsp;
+    // Event definitions
+    event PolicyRegistered(uint256 indexed policyId, address indexed farmer, bytes32 indexed h3Index);
+    event DataSubmitted(address indexed oracle, bytes32 indexed h3Index, uint256 timestamp);
+    event ConsensusReached(bytes32 indexed h3Index, uint256 timestamp, uint256 medianRainfall, uint256 medianNdvi);
+    event PayoutTriggered(uint256 indexed policyId, address indexed farmer, uint256 amount);
+    event OracleAuthorized(address indexed oracle, bool authorized);
+&nbsp;
+    constructor(address _policyRegistry, address payable _escrowVault) {
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(_policyRegistry != address(0), "Invalid registry address");
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(_escrowVault != address(0), "Invalid escrow address");
+        policyRegistry = PolicyRegistry(_policyRegistry);
+        escrowVault = EscrowVault(_escrowVault);
+    }
+&nbsp;
+    function setAuthorizedOracle(address oracle, bool authorized) external <span class="missing-if-branch" title="else path not taken" >E</span>onlyOwner {
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(oracle != address(0), "Invalid oracle address");
+        <span class="missing-if-branch" title="else path not taken" >E</span>if (authorized &amp;&amp; !isAuthorizedOracle[oracle]) {
+            oracleCount++;
+        } else <span class="cstat-no" title="statement not covered" >if (!authorized &amp;&amp; isAuthorizedOracle[oracle]) {</span>
+            oracleCount--;
+        }
+        isAuthorizedOracle[oracle] = authorized;
+        emit OracleAuthorized(oracle, authorized);
+    }
+&nbsp;
+    function registerPolicy(
+        uint256 policyId,
+        address farmer,
+        bytes32 h3Index,
+        uint256 threshold,
+        uint256 payoutAmount
+    ) external payable <span class="missing-if-branch" title="else path not taken" >E</span>onlyOwner {
+        // Validate H3 index structure
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(H3.isValidH3Index(h3Index), "Invalid H3 spatial index");
+        // Must send premium payment to deposit in escrow
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(msg.value &gt; 0, "Premium payment required");
+        
+        // Register policy in registry
+        policyRegistry.registerPolicy(policyId, farmer, h3Index, threshold, payoutAmount);
+        
+        // Deposit premium in escrow
+        escrowVault.depositPremium{value: msg.value}(policyId);
+        
+        emit PolicyRegistered(policyId, farmer, h3Index);
+    }
+&nbsp;
+    function submitData(
+        bytes32 h3Index,
+        uint256 timestamp,
+        uint256 rainfall,
+        uint256 ndvi,
+        bytes memory signature
+    ) external {
+        // Validate H3 index structure
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(H3.isValidH3Index(h3Index), "Invalid H3 spatial index");
+&nbsp;
+        // Recover signer from signature using modular ECDSA library
+        bytes32 messageHash = keccak256(abi.encodePacked(h3Index, timestamp, rainfall, ndvi));
+        bytes32 ethSignedMessageHash = ECDSA.toEthSignedMessageHash(messageHash);
+        address signer = ECDSA.recover(ethSignedMessageHash, signature);
+&nbsp;
+        require(isAuthorizedOracle[signer], "Unauthorized oracle signature");
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(!submissions[h3Index][timestamp][signer].exists, "Oracle already submitted for this window");
+&nbsp;
+        // Record submission
+        submissions[h3Index][timestamp][signer] = DataPayload({
+            rainfall: rainfall,
+            ndvi: ndvi,
+            exists: true
+        });
+        submitters[h3Index][timestamp].push(signer);
+&nbsp;
+        emit DataSubmitted(signer, h3Index, timestamp);
+&nbsp;
+        // If 3 unique submissions, evaluate consensus
+        if (submitters[h3Index][timestamp].length == 3) {
+            address[] memory oracles = submitters[h3Index][timestamp];
+            uint256 r1 = submissions[h3Index][timestamp][oracles[0]].rainfall;
+            uint256 r2 = submissions[h3Index][timestamp][oracles[1]].rainfall;
+            uint256 r3 = submissions[h3Index][timestamp][oracles[2]].rainfall;
+            
+            uint256 n1 = submissions[h3Index][timestamp][oracles[0]].ndvi;
+            uint256 n2 = submissions[h3Index][timestamp][oracles[1]].ndvi;
+            uint256 n3 = submissions[h3Index][timestamp][oracles[2]].ndvi;
+&nbsp;
+            uint256 medianRainfall = getMedian(r1, r2, r3);
+            uint256 medianNdvi = getMedian(n1, n2, n3);
+&nbsp;
+            emit ConsensusReached(h3Index, timestamp, medianRainfall, medianNdvi);
+&nbsp;
+            evaluatePolicies(h3Index, medianRainfall);
+        }
+    }
+&nbsp;
+    function evaluatePolicies(bytes32 h3Index, uint256 medianRainfall) internal {
+        uint256[] memory policyIds = policyRegistry.getPoliciesByH3(h3Index);
+        for (uint256 i = 0; i &lt; policyIds.length; i++) {
+            uint256 policyId = policyIds[i];
+            (
+                ,
+                address farmer,
+                ,
+                uint256 threshold,
+                uint256 payoutAmount,
+                bool isActive,
+                bool paidOut
+            ) = policyRegistry.getPolicy(policyId);
+&nbsp;
+            if (isActive &amp;&amp; !paidOut &amp;&amp; medianRainfall &lt; threshold) {
+                // Mark policy paid out in registry
+                policyRegistry.markPaidOut(policyId);
+                
+                // Execute payout via escrow
+                escrowVault.payout(policyId, payable(farmer), payoutAmount);
+&nbsp;
+                emit PayoutTriggered(policyId, farmer, payoutAmount);
+            }
+        }
+    }
+&nbsp;
+    function getMedian(uint256 a, uint256 b, uint256 c) public pure returns (uint256) {
+        if ((a &lt;= b &amp;&amp; b &lt;= c) || <span class="branch-1 cbranch-no" title="branch not covered" >(c &lt;= b &amp;&amp; b &lt;= a)</span>) {
+            return b;
+        } else <span class="missing-if-branch" title="else path not taken" >E</span>if (<span class="branch-0 cbranch-no" title="branch not covered" >(b &lt;= a &amp;&amp; a &lt;= c)</span> || (c &lt;= a &amp;&amp; a &lt;= b)) {
+            return a;
+        } else {
+<span class="cstat-no" title="statement not covered" >            return c;</span>
+        }
+    }
+}
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Thu Jul 02 2026 06:11:50 GMT+0000 (Coordinated Universal Time)
+</div>
+</div>
+<script src="../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../sorter.js"></script>
+</body>
+</html>

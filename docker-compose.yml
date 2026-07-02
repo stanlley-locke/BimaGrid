@@ -1,0 +1,295 @@
+# ============================================================
+# BimaGrid — Docker Compose (Development)
+# Run: docker compose up --build
+# ============================================================
+
+x-backend-build: &backend-build
+  context: .
+  dockerfile: backend/Dockerfile
+
+x-backend-env: &backend-env
+  env_file: .env
+  environment:
+    DATABASE_HOST: postgres
+    DATABASE_PORT: 5432
+    REDIS_URL: redis://redis:6379/0
+    CELERY_BROKER_URL: redis://redis:6379/1
+    GRPC_PORT: 50051
+
+services:
+  # ──────────────────────────────────────────────
+  # Infrastructure
+  # ──────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: bimagrid-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-bimagrid}
+      POSTGRES_USER: ${POSTGRES_USER:-bimagrid}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bimagrid_dev_password}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infrastructure/docker/configs/postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bimagrid} -d ${POSTGRES_DB:-bimagrid}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - bimagrid-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: bimagrid-redis
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+      - ./infrastructure/docker/configs/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    command: redis-server /usr/local/etc/redis/redis.conf
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - bimagrid-network
+
+  # ──────────────────────────────────────────────
+  # Hardhat local Ethereum node
+  # ──────────────────────────────────────────────
+  hardhat:
+    image: node:20-alpine
+    container_name: bimagrid-hardhat
+    restart: unless-stopped
+    working_dir: /contracts
+    volumes:
+      - ./contracts:/contracts
+    command: >
+      sh -c "
+        if [ ! -f package.json ]; then
+          npm init -y && npm install --save-dev hardhat @nomicfoundation/hardhat-toolbox;
+        fi &&
+        npm install &&
+        npx hardhat node --hostname 0.0.0.0
+      "
+    ports:
+      - "8545:8545"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8545 || true"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - bimagrid-network
+
+  # ──────────────────────────────────────────────
+  # Django Backend (REST + gRPC)
+  # ──────────────────────────────────────────────
+  backend:
+    build: *backend-build
+    container_name: bimagrid-backend
+    <<: *backend-env
+    ports:
+      - "8000:8000"
+      - "50051:50051"
+    volumes:
+      - ./backend:/app/backend
+      - backend-static:/app/static
+      - backend-media:/app/media
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - bimagrid-network
+
+  # ──────────────────────────────────────────────
+  # Celery Worker
+  # ──────────────────────────────────────────────
+  celery-worker:
+    build: *backend-build
+    container_name: bimagrid-celery-worker
+    <<: *backend-env
+    command: >
+      celery -A config worker
+        -l INFO
+        -Q default,payouts,notifications
+        --concurrency 4
+        --max-tasks-per-child 100
+    volumes:
+      - ./backend:/app/backend
+    depends_on:
+      backend:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    networks:
+      - bimagrid-network
+
+  # ──────────────────────────────────────────────
+  # Celery Beat Scheduler
+  # ──────────────────────────────────────────────
+  celery-beat:
+    build: *backend-build
+    container_name: bimagrid-celery-beat
+    <<: *backend-env
+    command: >
+      celery -A config beat
+        -l INFO
+        --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - ./backend:/app/backend
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - bimagrid-network
+
+  # ──────────────────────────────────────────────
+  # USSD Microservice
+  # ──────────────────────────────────────────────
+  ussd:
+    build:
+      context: .
+      dockerfile: ussd/Dockerfile
+    container_name: bimagrid-ussd
+    env_file: .env
+    environment:
+      BACKEND_URL: http://backend:8000
+      GRPC_BACKEND_TARGET: backend:50051
+      REDIS_URL: redis://redis:6379/2
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./ussd:/app/ussd
+    depends_on:
+      backend:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    networks:
+      - bimagrid-network
+
+  # ──────────────────────────────────────────────
+  # Oracle Node (Rust)
+  # ──────────────────────────────────────────────
+  oracle-node:
+    build:
+      context: .
+      dockerfile: oracle-node/Dockerfile
+    container_name: bimagrid-oracle-node
+    environment:
+      BACKEND_GRPC_URL: http://backend:50051
+      BLOCKCHAIN_RPC_URL: http://hardhat:8545
+      RUST_LOG: info
+    depends_on:
+      backend:
+        condition: service_started
+      hardhat:
+        condition: service_started
+    networks:
+      - bimagrid-network
+
+  # ──────────────────────────────────────────────
+  # API Gateway (Node.js / Express)
+  # ──────────────────────────────────────────────
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api/gateway/Dockerfile
+    container_name: bimagrid-api-gateway
+    environment:
+      BACKEND_URL: http://backend:8000
+      USSD_URL: http://ussd:8001
+      PORT: 3001
+      NODE_ENV: development
+    ports:
+      - "3001:3001"
+    depends_on:
+      backend:
+        condition: service_started
+      ussd:
+        condition: service_started
+    networks:
+      - bimagrid-network
+
+  # ──────────────────────────────────────────────
+  # Frontend (React / Next.js)
+  # ──────────────────────────────────────────────
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    container_name: bimagrid-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      api-gateway:
+        condition: service_started
+    networks:
+      - bimagrid-network
+
+  # ──────────────────────────────────────────────
+  # Nginx Reverse Proxy
+  # ──────────────────────────────────────────────
+  nginx:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfiles/nginx.Dockerfile
+    container_name: bimagrid-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+      - "50051:50051"
+    volumes:
+      - backend-static:/static:ro
+      - backend-media:/media:ro
+      - ./infrastructure/docker/configs/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      backend:
+        condition: service_started
+      ussd:
+        condition: service_started
+      api-gateway:
+        condition: service_started
+    networks:
+      - bimagrid-network
+
+# ──────────────────────────────────────────────
+# Networks
+# ──────────────────────────────────────────────
+networks:
+  bimagrid-network:
+    driver: bridge
+    name: bimagrid-network
+
+# ──────────────────────────────────────────────
+# Volumes
+# ──────────────────────────────────────────────
+volumes:
+  postgres-data:
+    name: bimagrid-postgres-data
+  redis-data:
+    name: bimagrid-redis-data
+  backend-static:
+    name: bimagrid-backend-static
+  backend-media:
+    name: bimagrid-backend-media

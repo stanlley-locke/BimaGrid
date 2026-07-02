@@ -21,24 +21,33 @@ def fetch_nasa_power_daily(
 	end_date: date,
 	parameters: str = "T2M,T2M_MAX,T2M_MIN,PRECTOT",
 ) -> dict[str, Any]:
-	try:
-		response = requests.get(
-			NASA_POWER_URL,
-			params={
-				"parameters": parameters,
-				"community": "AG",
-				"longitude": lon,
-				"latitude": lat,
-				"start": start_date.strftime("%Y%m%d"),
-				"end": end_date.strftime("%Y%m%d"),
-				"format": "JSON",
-			},
-			timeout=20,
-		)
-		if response.ok:
-			return response.json()
-	except requests.RequestException as exc:
-		logger.warning("NASA POWER unavailable, using mock: %s", exc)
+	import time
+	for attempt in range(3):
+		try:
+			response = requests.get(
+				NASA_POWER_URL,
+				params={
+					"parameters": parameters,
+					"community": "AG",
+					"longitude": lon,
+					"latitude": lat,
+					"start": start_date.strftime("%Y%m%d"),
+					"end": end_date.strftime("%Y%m%d"),
+					"format": "JSON",
+				},
+				timeout=20,
+			)
+			if response.ok:
+				return response.json()
+			if response.status_code == 429 and attempt < 2:
+				time.sleep(2 ** attempt)
+				continue
+			break
+		except requests.RequestException as exc:
+			if attempt == 2:
+				logger.warning("NASA POWER unavailable after retries, using mock: %s", exc)
+			else:
+				time.sleep(2 ** attempt)
 
 	seed = int(hashlib.sha256(f"{lat:.3f}{lon:.3f}".encode()).hexdigest()[:8], 16)
 	parameters_data: dict[str, dict[str, float]] = {"T2M": {}, "T2M_MAX": {}, "T2M_MIN": {}, "PRECTOT": {}}

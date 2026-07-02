@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import os
+import django
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.testing")
+django.setup()
 
 import pytest
 from django.contrib.auth import get_user_model
 
 from apps.accounts.models import Profile
-
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.testing")
 
 User = get_user_model()
 

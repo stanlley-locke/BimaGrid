@@ -37,3 +37,6 @@ class BlockchainClient:
 
 	def send_raw_transaction(self, raw_tx: str) -> str | None:
 		return self.call("eth_sendRawTransaction", [raw_tx])
+
+	def eth_call(self, to_address: str, data: str, block: str = "latest") -> str | None:
+		return self.call("eth_call", [{"to": to_address, "data": data}, block])

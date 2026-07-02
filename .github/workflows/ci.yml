@@ -1,0 +1,258 @@
+name: BimaGrid CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/bimagrid
+
+jobs:
+  # ──────────────────────────────────────────────────────────
+  # Backend Django Tests
+  # ──────────────────────────────────────────────────────────
+  test-backend:
+    name: Backend Tests (Python)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: bimagrid_test
+          POSTGRES_USER: bimagrid
+          POSTGRES_PASSWORD: test_password
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r backend/requirements/base.txt
+          pip install -r backend/requirements/test.txt
+        working-directory: .
+
+      - name: Run migrations
+        run: python manage.py migrate --noinput
+        working-directory: backend
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.testing
+          DATABASE_ENGINE: django.db.backends.postgresql
+          DATABASE_NAME: bimagrid_test
+          DATABASE_USER: bimagrid
+          DATABASE_PASSWORD: test_password
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          SECRET_KEY: ci-test-secret-key
+          CELERY_TASK_ALWAYS_EAGER: "True"
+
+      - name: Run pytest
+        run: pytest --cov=apps --cov-report=xml --cov-report=term -v
+        working-directory: backend
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.testing
+          DATABASE_ENGINE: django.db.backends.postgresql
+          DATABASE_NAME: bimagrid_test
+          DATABASE_USER: bimagrid
+          DATABASE_PASSWORD: test_password
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          SECRET_KEY: ci-test-secret-key
+          CELERY_TASK_ALWAYS_EAGER: "True"
+          MPESA_USE_MOCK: "True"
+          AFRICASTALKING_USE_MOCK: "True"
+          OPENEO_USE_MOCK: "True"
+          IPRS_USE_MOCK: "True"
+          ARDHISASA_USE_MOCK: "True"
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: backend/coverage.xml
+          flags: backend
+
+  # ──────────────────────────────────────────────────────────
+  # USSD Microservice Tests
+  # ──────────────────────────────────────────────────────────
+  test-ussd:
+    name: USSD Tests (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r ussd/requirements/base.txt
+
+      - name: Run pytest
+        run: pytest -v
+        working-directory: ussd
+        env:
+          DJANGO_SETTINGS_MODULE: src.config.settings
+
+  # ──────────────────────────────────────────────────────────
+  # gRPC Integration Tests
+  # ──────────────────────────────────────────────────────────
+  test-grpc:
+    name: gRPC Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install grpcio and pytest
+        run: pip install grpcio grpcio-tools pytest
+
+      - name: Generate gRPC stubs
+        run: bash scripts/generate_grpc.sh
+
+      - name: Run gRPC tests
+        run: python3 -m pytest tests/test_grpc_services.py -v
+
+  # ──────────────────────────────────────────────────────────
+  # Smart Contract Tests (Hardhat)
+  # ──────────────────────────────────────────────────────────
+  test-contracts:
+    name: Smart Contract Tests (Hardhat)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: contracts/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: contracts
+
+      - name: Compile contracts
+        run: npx hardhat compile
+        working-directory: contracts
+
+      - name: Run tests
+        run: npx hardhat test
+        working-directory: contracts
+
+      - name: Gas report
+        run: REPORT_GAS=true npx hardhat test
+        working-directory: contracts
+
+  # ──────────────────────────────────────────────────────────
+  # Oracle Node (Rust)
+  # ──────────────────────────────────────────────────────────
+  test-oracle:
+    name: Oracle Node Tests (Rust)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.78"
+
+      - name: Install protobuf compiler
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: oracle-node
+
+      - name: Run Rust tests
+        run: cargo test
+        working-directory: oracle-node
+
+  # ──────────────────────────────────────────────────────────
+  # Docker Build & Push (only on main)
+  # ──────────────────────────────────────────────────────────
+  build-and-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-ussd, test-grpc, test-contracts]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & Push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: backend/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}-backend:latest,${{ env.IMAGE_PREFIX }}-backend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & Push USSD
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ussd/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}-ussd:latest,${{ env.IMAGE_PREFIX }}-ussd:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & Push API Gateway
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: api/gateway/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}-gateway:latest,${{ env.IMAGE_PREFIX }}-gateway:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

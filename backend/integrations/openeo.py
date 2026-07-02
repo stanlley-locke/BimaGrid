@@ -26,6 +26,8 @@ class OpenEOClient:
 			return round(0.2 + (seed % 6000) / 10000, 4)
 		if index_name == "ndwi":
 			return round(-0.1 + (seed % 5000) / 10000, 4)
+		if index_name == "evi":
+			return round(0.15 + (seed % 5500) / 10000, 4)
 		return round((seed % 10000) / 10000, 4)
 
 	def compute_index(
@@ -77,3 +79,6 @@ class OpenEOClient:
 
 	def compute_ndwi(self, h3_index: str, spatial_extent: dict[str, float]) -> dict[str, Any]:
 		return self.compute_index(h3_index, "ndwi", spatial_extent=spatial_extent)
+
+	def compute_evi(self, h3_index: str, spatial_extent: dict[str, float]) -> dict[str, Any]:
+		return self.compute_index(h3_index, "evi", spatial_extent=spatial_extent)

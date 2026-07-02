@@ -40,12 +40,17 @@ class BackendAPIClient:
 
 	def _request(self, method: str, path: str, **kwargs: Any) -> dict[str, Any]:
 		url = f"{self.base_url}{path}"
-		try:
-			with httpx.Client(timeout=self.timeout) as client:
-				response = client.request(method, url, headers=self._headers(), **kwargs)
-		except httpx.RequestError as exc:
-			logger.exception("Backend request failed: %s %s", method, url)
-			raise BackendAPIError(f"Backend unavailable: {exc}") from exc
+		import time
+		for attempt in range(3):
+			try:
+				with httpx.Client(timeout=self.timeout) as client:
+					response = client.request(method, url, headers=self._headers(), **kwargs)
+					break
+			except httpx.RequestError as exc:
+				if attempt == 2:
+					logger.exception("Backend request failed after retries: %s %s", method, url)
+					raise BackendAPIError(f"Backend unavailable: {exc}") from exc
+				time.sleep(2 ** attempt)
 
 		if response.status_code >= 400:
 			payload: Any

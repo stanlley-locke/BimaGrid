@@ -17,6 +17,7 @@ class ClaimReviewSerializer(serializers.ModelSerializer):
 
 class ClaimSerializer(serializers.ModelSerializer):
 	reviews = ClaimReviewSerializer(many=True, read_only=True)
+	claim_number = serializers.CharField(required=False)
 
 	class Meta:
 		model = Claim

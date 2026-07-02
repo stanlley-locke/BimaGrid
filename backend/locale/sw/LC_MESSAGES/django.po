@@ -1,0 +1,24 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: BimaGrid\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-02 00:00+0000\n"
+"PO-Revision-Date: 2026-07-02 00:00+0000\n"
+"Last-Translator: BimaGrid Team\n"
+"Language-Team: Swahili\n"
+"Language: sw\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Welcome to BimaGrid"
+msgstr "Karibu kwenye BimaGrid"
+
+msgid "Register Farm"
+msgstr "Sajili Shamba"
+
+msgid "Check Policy Status"
+msgstr "Angalia Hali ya Bima"
+
+msgid "File Claim"
+msgstr "Wasilisha Dai"

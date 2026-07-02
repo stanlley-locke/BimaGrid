@@ -17,3 +17,8 @@ def process_payout_for_policy(policy: Policy, amount, phone_number: str):
 
 def admin_bypass_payment(policy: Policy):
 	return bypass_payment_for_policy(policy)
+
+
+def verify_payment(payment):
+	from apps.payments.services import verify_stk_payment_status
+	return verify_stk_payment_status(payment)

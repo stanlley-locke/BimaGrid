@@ -65,6 +65,28 @@ def process_stk_callback(checkout_id: str, result_code: int, body: dict) -> Paym
 	return payment
 
 
+def verify_stk_payment_status(payment: PaymentTransaction) -> PaymentTransaction:
+	if payment.status != PaymentTransaction.Status.PROCESSING:
+		return payment
+	checkout_id = payment.provider_payload.get("CheckoutRequestID")
+	if not checkout_id:
+		checkout_id = payment.provider_payload.get("checkout_request_id")
+	if not checkout_id:
+		return payment
+	
+	client = MpesaClient()
+	try:
+		response = client.stk_push_query(checkout_id)
+		result_code = response.get("ResultCode")
+		if result_code == "0":
+			return process_stk_callback(checkout_id, 0, response) or payment
+		elif result_code is not None:
+			return process_stk_callback(checkout_id, int(result_code), response) or payment
+	except Exception:
+		pass
+	return payment
+
+
 def queue_payout(policy, amount, phone_number) -> Payout:
 	payout = Payout.objects.create(
 		policy=policy,

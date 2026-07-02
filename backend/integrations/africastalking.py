@@ -38,16 +38,24 @@ class AfricasTalkingClient:
 				}
 			}
 
-		response = requests.post(
-			f"{self.base_url}/messaging",
-			headers={"apiKey": self.api_key, "Accept": "application/json"},
-			data={
-				"username": self.username,
-				"to": ",".join(recipients),
-				"message": message,
-				"from": self.sender_id,
-			},
-			timeout=30,
-		)
-		response.raise_for_status()
-		return response.json()
+		import time
+		for attempt in range(3):
+			try:
+				response = requests.post(
+					f"{self.base_url}/messaging",
+					headers={"apiKey": self.api_key, "Accept": "application/json"},
+					data={
+						"username": self.username,
+						"to": ",".join(recipients),
+						"message": message,
+						"from": self.sender_id,
+					},
+					timeout=30,
+				)
+				response.raise_for_status()
+				return response.json()
+			except requests.RequestException as exc:
+				if attempt == 2:
+					logger.error("AfricasTalking API failed after retries: %s", exc)
+					raise
+				time.sleep(2 ** attempt)

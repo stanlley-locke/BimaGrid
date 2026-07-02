@@ -131,3 +131,30 @@ class MpesaClient:
 		if not response.ok:
 			raise MpesaError(f"B2C payout failed: {response.text}")
 		return response.json()
+
+	def stk_push_query(self, checkout_request_id: str) -> dict[str, Any]:
+		if self.use_mock:
+			return {
+				"ResponseCode": "0",
+				"ResponseDescription": "The service request has been accepted successfully.",
+				"ResultCode": "0",
+				"ResultDesc": "The service request is processed successfully.",
+				"CheckoutRequestID": checkout_request_id,
+			}
+
+		timestamp, password = self._stk_password()
+		payload = {
+			"BusinessShortCode": self.shortcode,
+			"Password": password,
+			"Timestamp": timestamp,
+			"CheckoutRequestID": checkout_request_id,
+		}
+		response = requests.post(
+			f"{self.base_url}/mpesa/stkpushquery/v1/query",
+			json=payload,
+			headers={"Authorization": f"Bearer {self._get_access_token()}"},
+			timeout=30,
+		)
+		if not response.ok:
+			raise MpesaError(f"STK push query failed: {response.text}")
+		return response.json()

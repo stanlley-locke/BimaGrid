@@ -37,11 +37,11 @@ MITIGATION_DISCOUNTS: dict[str, Decimal] = {
 
 
 def crop_base_risk(crop: str) -> Decimal:
-	return CROP_BASE_RISK.get(crop, Decimal("0.50"))
+	return CROP_BASE_RISK.get(crop.lower(), Decimal("0.50"))
 
 
 def crop_drought_sensitivity(crop: str) -> Decimal:
-	return CROP_DROUGHT_SENSITIVITY.get(crop, Decimal("1.0"))
+	return CROP_DROUGHT_SENSITIVITY.get(crop.lower(), Decimal("1.0"))
 
 
 def mitigation_discount_percent(mitigations: list[str]) -> Decimal:

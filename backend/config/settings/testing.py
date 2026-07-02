@@ -15,3 +15,7 @@ ARDHISASA_USE_MOCK = True
 ORACLE_SIGNATURE_VERIFY = False
 RATE_LIMIT_REQUESTS = 1000
 USSD_INTERNAL_API_KEY = ""
+
+# Use default StaticFilesStorage during tests to bypass Manifest check
+STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
+

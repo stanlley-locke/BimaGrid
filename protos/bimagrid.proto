@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package bimagrid;
+
+// ==========================================
+// Oracle Integration (Rust -> Python)
+// ==========================================
+service OracleService {
+  // Submit off-chain cryptographically signed data to the backend
+  rpc SubmitData (OracleDataRequest) returns (OracleDataResponse);
+}
+
+message OracleDataRequest {
+  string oracle_id = 1;
+  string h3_index = 2;
+  string timestamp = 3;
+  double rainfall_mm = 4;
+  double ndvi = 5;
+  double soil_moisture = 6;
+  repeated string data_sources = 7;
+  string signature = 8;
+}
+
+message OracleDataResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// ==========================================
+// USSD Integration (Python USSD -> Python Backend)
+// ==========================================
+service UssdService {
+  rpc RegisterFarmer (RegisterFarmerRequest) returns (RegisterFarmerResponse);
+  rpc GetPolicyStatus (PolicyStatusRequest) returns (PolicyStatusResponse);
+  rpc FileClaim (FileClaimRequest) returns (FileClaimResponse);
+}
+
+message RegisterFarmerRequest {
+  string phone = 1;
+  string ward_code = 2;
+  string crop = 3;
+  string acreage = 4;
+  string mpesa_number = 5;
+}
+
+message RegisterFarmerResponse {
+  bool success = 1;
+  string message = 2;
+  string policy_number = 3;
+}
+
+message PolicyStatusRequest {
+  string phone = 1;
+}
+
+message PolicyStatusResponse {
+  bool success = 1;
+  string message = 2;
+  string status = 3;
+  string next_payment_date = 4;
+}
+
+message FileClaimRequest {
+  string phone = 1;
+  string loss_type = 2;
+  string description = 3;
+}
+
+message FileClaimResponse {
+  bool success = 1;
+  string message = 2;
+  string claim_reference = 3;
+}
