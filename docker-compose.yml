@@ -227,25 +227,25 @@ services:
   # ──────────────────────────────────────────────
   # Frontend (React / Next.js)
   # ──────────────────────────────────────────────
-  frontend:
-    build:
-      context: frontend
-      dockerfile: Dockerfile
-    container_name: bimagrid-frontend
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3001
-      NODE_ENV: development
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
-    depends_on:
-      api-gateway:
-        condition: service_started
-    networks:
-      - bimagrid-network
+  # frontend:
+  #   build:
+  #     context: frontend
+  #     dockerfile: Dockerfile
+  #   container_name: bimagrid-frontend
+  #   environment:
+  #     NEXT_PUBLIC_API_URL: http://localhost:3001
+  #     NODE_ENV: development
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - ./frontend:/app
+  #     - /app/node_modules
+  #     - /app/.next
+  #   depends_on:
+  #     api-gateway:
+  #       condition: service_started
+  #   networks:
+  #     - bimagrid-network
 
   # ──────────────────────────────────────────────
   # Nginx Reverse Proxy

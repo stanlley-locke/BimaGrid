@@ -127,14 +127,14 @@ services:
   # ──────────────────────────────────────────────
   # Frontend — production build (no volume mounts)
   # ──────────────────────────────────────────────
-  frontend:
-    <<: *restart-policy
-    logging: *default-logging
-    volumes: !reset []      # Remove bind mounts — image contains built assets
-    ports: !reset []
-    environment:
-      NODE_ENV: production
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+  # frontend:
+  #   <<: *restart-policy
+  #   logging: *default-logging
+  #   volumes: !reset []      # Remove bind mounts — image contains built assets
+  #   ports: !reset []
+  #   environment:
+  #     NODE_ENV: production
+  #     NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
 
   # ──────────────────────────────────────────────
   # Nginx — expose 80 & 443 for production TLS

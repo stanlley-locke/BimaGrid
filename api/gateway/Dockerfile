@@ -16,7 +16,8 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY api/gateway/package*.json ./
-RUN npm ci
+
+RUN npm ci --omit=dev
 
 COPY api/gateway/ .
 RUN npm run build
