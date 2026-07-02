@@ -40,11 +40,15 @@ INSTALLED_APPS = [
 	"apps.geospatial",
 	"apps.satellite",
 	"apps.admin_dashboard",
+	"apps.ussd",
 ]
 
 MIDDLEWARE = [
 	"django.middleware.security.SecurityMiddleware",
 	"apps.core.middleware.RequestIDMiddleware",
+	"middleware.logging.RequestTimingMiddleware",
+	"middleware.rate_limiting.SimpleRateLimitMiddleware",
+	"middleware.authentication.InternalApiKeyMiddleware",
 	"whitenoise.middleware.WhiteNoiseMiddleware",
 	"corsheaders.middleware.CorsMiddleware",
 	"django.contrib.sessions.middleware.SessionMiddleware",
@@ -106,6 +110,8 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@bimagrid.io")
+
 REST_FRAMEWORK = {
 	"DEFAULT_RENDERER_CLASSES": [
 		"rest_framework.renderers.JSONRenderer",
@@ -117,6 +123,7 @@ REST_FRAMEWORK = {
 	],
 	"DEFAULT_AUTHENTICATION_CLASSES": [
 		"rest_framework.authentication.SessionAuthentication",
+		"apps.accounts.authentication.BearerTokenAuthentication",
 		"rest_framework.authentication.TokenAuthentication",
 	],
 	"DEFAULT_PERMISSION_CLASSES": [
@@ -145,6 +152,53 @@ SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=not DEBUG)
 CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=not DEBUG)
 X_FRAME_OPTIONS = "DENY"
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
+
+BIMAGRID_VERSION = env("BIMAGRID_VERSION", default="1.0.0")
+
+# External integrations — mock fallbacks when credentials are absent
+MPESA_CONSUMER_KEY = env("MPESA_CONSUMER_KEY", default="")
+MPESA_CONSUMER_SECRET = env("MPESA_CONSUMER_SECRET", default="")
+MPESA_SHORTCODE = env("MPESA_SHORTCODE", default="174379")
+MPESA_PASSKEY = env("MPESA_PASSKEY", default="")
+MPESA_INITIATOR_NAME = env("MPESA_INITIATOR_NAME", default="BimaGridAdmin")
+MPESA_SECURITY_CREDENTIAL = env("MPESA_SECURITY_CREDENTIAL", default="")
+MPESA_B2C_SHORTCODE = env("MPESA_B2C_SHORTCODE", default="600123")
+MPESA_CALLBACK_BASE_URL = env("MPESA_CALLBACK_BASE_URL", default="http://localhost:8000")
+MPESA_ENVIRONMENT = env("MPESA_ENVIRONMENT", default="sandbox")
+MPESA_USE_MOCK = env.bool("MPESA_USE_MOCK", default=not bool(MPESA_CONSUMER_KEY))
+
+AFRICASTALKING_USERNAME = env("AFRICASTALKING_USERNAME", default="sandbox")
+AFRICASTALKING_API_KEY = env("AFRICASTALKING_API_KEY", default="")
+AFRICASTALKING_SENDER_ID = env("AFRICASTALKING_SENDER_ID", default="BimaGrid")
+AFRICASTALKING_USE_MOCK = env.bool("AFRICASTALKING_USE_MOCK", default=not bool(AFRICASTALKING_API_KEY))
+
+# Standalone USSD service (optional proxy target)
+USSD_SERVICE_URL = env("USSD_SERVICE_URL", default="")
+USSD_SERVICE_TIMEOUT = env.float("USSD_SERVICE_TIMEOUT", default=10.0)
+USSD_INTERNAL_API_KEY = env("USSD_INTERNAL_API_KEY", default="bimagrid-ussd-internal-dev-key")
+
+OPENEO_BACKEND_URL = env("OPENEO_BACKEND_URL", default="https://earthengine.openeo.org")
+OPENEO_USERNAME = env("OPENEO_USERNAME", default="")
+OPENEO_PASSWORD = env("OPENEO_PASSWORD", default="")
+OPENEO_USE_MOCK = env.bool("OPENEO_USE_MOCK", default=not bool(OPENEO_USERNAME))
+
+IPRS_API_URL = env("IPRS_API_URL", default="https://iprs.go.ke/api/v1")
+IPRS_API_KEY = env("IPRS_API_KEY", default="")
+IPRS_USE_MOCK = env.bool("IPRS_USE_MOCK", default=not bool(IPRS_API_KEY))
+
+ARDHISASA_API_URL = env("ARDHISASA_API_URL", default="https://ardhisasa.lands.go.ke/api/v1")
+ARDHISASA_CLIENT_ID = env("ARDHISASA_CLIENT_ID", default="")
+ARDHISASA_CLIENT_SECRET = env("ARDHISASA_CLIENT_SECRET", default="")
+ARDHISASA_USE_MOCK = env.bool("ARDHISASA_USE_MOCK", default=not bool(ARDHISASA_CLIENT_ID))
+
+BLOCKCHAIN_RPC_URL = env("BLOCKCHAIN_RPC_URL", default="http://localhost:8545")
+ORACLE_SIGNATURE_VERIFY = env.bool("ORACLE_SIGNATURE_VERIFY", default=False)
+ORACLE_AUTHORIZED_KEYS = env.list("ORACLE_AUTHORIZED_KEYS", default=[])
+
+H3_DEFAULT_RESOLUTION = env.int("H3_DEFAULT_RESOLUTION", default=9)
+
+RATE_LIMIT_REQUESTS = env.int("RATE_LIMIT_REQUESTS", default=120)
+RATE_LIMIT_WINDOW_SECONDS = env.int("RATE_LIMIT_WINDOW_SECONDS", default=60)
 
 LOGGING = {
 	"version": 1,

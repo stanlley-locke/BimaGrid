@@ -1,1 +1,1 @@
-"""USSD config package."""
+"""USSD configuration package."""

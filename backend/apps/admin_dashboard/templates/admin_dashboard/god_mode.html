@@ -1,0 +1,57 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>BimaGrid God Mode</title>
+	<link rel="stylesheet" href="{% static 'admin_dashboard/css/god_mode.css' %}">
+</head>
+<body>
+	<header class="header">
+		<h1>BimaGrid God Mode</h1>
+		<p>Admin demo console for drought simulation, oracle evaluation, and payment bypass.</p>
+	</header>
+
+	<main class="grid">
+		<section class="card">
+			<h2>Simulate Drought</h2>
+			<p>Inject mock oracle submissions for an H3 cell.</p>
+			<form id="simulate-form">
+				<label>H3 Index <input name="h3_index" placeholder="8928308280fffff" required></label>
+				<label>Rainfall (mm) <input name="rainfall_mm" type="number" step="0.1" value="15"></label>
+				<label>NDVI <input name="ndvi" type="number" step="0.01" value="0.35"></label>
+				<button type="submit">Simulate</button>
+			</form>
+			<pre id="simulate-result" class="result"></pre>
+		</section>
+
+		<section class="card">
+			<h2>Trigger Evaluation</h2>
+			<p>Queue Celery oracle evaluation for an H3 hexagon.</p>
+			<form id="evaluate-form">
+				<label>H3 Index <input name="h3_index" placeholder="8928308280fffff" required></label>
+				<label><input name="simulate_drought" type="checkbox"> Simulate drought first</label>
+				<button type="submit">Trigger</button>
+			</form>
+			<pre id="evaluate-result" class="result"></pre>
+		</section>
+
+		<section class="card">
+			<h2>Bypass Payment</h2>
+			<p>Mark a draft policy as paid (admin demo only).</p>
+			<form id="bypass-form">
+				<label>Policy Number <input name="policy_id" placeholder="POL-..." required></label>
+				<button type="submit">Bypass Payment</button>
+			</form>
+			<pre id="bypass-result" class="result"></pre>
+		</section>
+	</main>
+
+	<footer class="footer">
+		<p>API base: <code>/api/admin/</code> &mdash; requires admin auth token or session.</p>
+	</footer>
+
+	<script src="{% static 'admin_dashboard/js/god_mode.js' %}"></script>
+</body>
+</html>

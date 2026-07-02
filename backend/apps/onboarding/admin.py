@@ -12,11 +12,11 @@ class LandParcelInline(admin.TabularInline):
 
 @admin.register(FarmerOnboarding)
 class FarmerOnboardingAdmin(admin.ModelAdmin):
-	list_display = ("profile", "ward_code", "crop", "acreage", "verification_level", "status", "submitted_at")
-	list_filter = ("crop", "status", "verification_level")
+	list_display = ("profile", "assigned_agent", "ward_code", "crop", "acreage", "verification_level", "status", "submitted_at")
+	list_filter = ("crop", "status", "verification_level", "assigned_agent")
 	search_fields = ("profile__full_name", "profile__phone_number", "ward_code", "mpesa_number")
 	inlines = [LandParcelInline]
-	raw_id_fields = ("profile",)
+	raw_id_fields = ("profile", "assigned_agent")
 
 
 @admin.register(LandParcel)

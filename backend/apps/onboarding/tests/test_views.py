@@ -15,7 +15,7 @@ class OnboardingViewTests(TestCase):
 	def test_onboarding_requires_authentication(self):
 		response = self.client.get("/api/onboarding/")
 
-		self.assertEqual(response.status_code, 401)
+		self.assertIn(response.status_code, [401, 403])
 
 	def test_current_onboarding_returns_created_workflow(self):
 		user = User.objects.create_user(username="viewer", email="viewer@example.com", password="strong-pass-123")

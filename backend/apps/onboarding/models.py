@@ -22,6 +22,14 @@ class TimeStampedUUIDModel(models.Model):
 
 class FarmerOnboarding(TimeStampedUUIDModel):
 	profile = models.OneToOneField(Profile, on_delete=models.CASCADE, related_name="onboarding")
+	assigned_agent = models.ForeignKey(
+		Profile,
+		on_delete=models.SET_NULL,
+		null=True,
+		blank=True,
+		related_name="assigned_onboardings",
+		limit_choices_to={"role": Profile.Role.BROKER},
+	)
 	ward_code = models.CharField(max_length=32, blank=True)
 	crop = models.CharField(max_length=32, choices=CropChoice.choices, blank=True)
 	acreage = models.DecimalField(max_digits=8, decimal_places=2, default=0)

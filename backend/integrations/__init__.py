@@ -1,1 +1,1 @@
-"""Backend integrations package."""
+"""External API client integrations for BimaGrid."""

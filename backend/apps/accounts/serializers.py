@@ -7,7 +7,7 @@ from django.db import transaction
 from rest_framework import serializers
 
 from .models import Profile
-from .services import sync_profile_fields
+from .services import get_or_create_profile, sync_profile_fields
 
 
 User = get_user_model()
@@ -38,16 +38,24 @@ class AccountSerializer(serializers.ModelSerializer):
 		fields = ["id", "username", "email", "first_name", "last_name", "profile"]
 		read_only_fields = ["id"]
 
+	@transaction.atomic
+	def save(self, **kwargs):
+		profile_payload = None
+		if hasattr(self, "initial_data") and isinstance(self.initial_data, dict):
+			profile_payload = self.initial_data.get("profile")
+		instance = super().save(**kwargs)
+		if profile_payload:
+			sync_profile_fields(instance, profile_payload)
+			instance.profile.refresh_from_db()
+		return instance
+
 	def update(self, instance, validated_data):
-		profile_data = validated_data.pop("profile", None)
+		validated_data.pop("profile", None)
+		user_fields = list(validated_data.keys())
 		for attr, value in validated_data.items():
 			setattr(instance, attr, value)
-		if validated_data:
-			instance.save(update_fields=[*validated_data.keys()])
-		else:
-			instance.save()
-		if profile_data is not None:
-			sync_profile_fields(instance, profile_data)
+		if user_fields:
+			instance.save(update_fields=user_fields)
 		return instance
 
 
@@ -84,7 +92,7 @@ class RegistrationSerializer(serializers.Serializer):
 		}
 		password = validated_data.pop("password")
 		user = User.objects.create_user(password=password, **validated_data)
-		Profile.objects.create(user=user, **profile_data)
+		sync_profile_fields(user, profile_data)
 		return user
 
 
@@ -94,3 +102,19 @@ class RegistrationResponseSerializer(serializers.ModelSerializer):
 	class Meta:
 		model = User
 		fields = ["id", "username", "email", "first_name", "last_name", "profile"]
+
+
+class LoginSerializer(serializers.Serializer):
+	username = serializers.CharField()
+	password = serializers.CharField(write_only=True)
+
+	def validate(self, attrs):
+		from .services import authenticate_with_identifier
+
+		user = authenticate_with_identifier(attrs["username"], attrs["password"])
+		if user is None:
+			raise serializers.ValidationError("Invalid credentials.")
+		if not user.is_active:
+			raise serializers.ValidationError("This account is disabled.")
+		attrs["user"] = user
+		return attrs

@@ -6,6 +6,8 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.accounts.models import Profile
+from integrations.ardhisasa import ArdhiSasaClient
+from integrations.iprs import IPRSClient
 
 from .constants import OnboardingStatus
 from .models import FarmerOnboarding, LandParcel
@@ -14,6 +16,18 @@ from .models import FarmerOnboarding, LandParcel
 def get_or_create_onboarding(profile: Profile) -> FarmerOnboarding:
 	onboarding, _ = FarmerOnboarding.objects.get_or_create(profile=profile)
 	return onboarding
+
+
+def verify_farmer_identity(profile: Profile, id_number: str, first_name: str, last_name: str, dob: str) -> dict:
+	result = IPRSClient().verify_identity(id_number, first_name, last_name, dob)
+	if result.get("status") == "verified":
+		profile.national_id = id_number
+		profile.save(update_fields=["national_id", "updated_at"])
+	return result
+
+
+def verify_land_parcel(title_number: str, owner_id_number: str, parcel_number: str) -> dict:
+	return ArdhiSasaClient().verify_title(title_number, owner_id_number, parcel_number)
 
 
 def calculate_verification_level(onboarding: FarmerOnboarding) -> int:

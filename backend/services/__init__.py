@@ -1,1 +1,1 @@
-"""Backend services package."""
+"""Cross-app business logic services."""

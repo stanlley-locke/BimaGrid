@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "bimagrid-backend"
 version = "0.1.0"
-description = "BimaGrid backend scaffold"
+description = "BimaGrid Django backend"
 dependencies = [
 	"Django>=4.2,<5",
 	"djangorestframework",

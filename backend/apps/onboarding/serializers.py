@@ -7,7 +7,7 @@ from rest_framework import serializers
 
 from .constants import CropChoice, OnboardingStatus
 from .models import FarmerOnboarding, LandParcel
-from .services import refresh_onboarding_level, replace_land_parcels
+from .services import get_or_create_onboarding, refresh_onboarding_level, replace_land_parcels
 from .validators import validate_geojson_geometry, validate_mpesa_number, validate_positive_acreage
 
 
@@ -94,7 +94,10 @@ class FarmerOnboardingSerializer(serializers.ModelSerializer):
 	def create(self, validated_data):
 		parcels_data = validated_data.pop("land_parcels", [])
 		profile = self.context["profile"]
-		onboarding = FarmerOnboarding.objects.create(profile=profile, **validated_data)
+		onboarding = get_or_create_onboarding(profile)
+		for attr, value in validated_data.items():
+			setattr(onboarding, attr, value)
+		onboarding.save()
 		replace_land_parcels(onboarding, parcels_data)
 		refresh_onboarding_level(onboarding)
 		return onboarding

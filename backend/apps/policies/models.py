@@ -14,6 +14,7 @@ class Policy(TimeStampedUUIDModel):
 		ACTIVE = "active", "Active"
 		LAPSED = "lapsed", "Lapsed"
 		CANCELLED = "cancelled", "Cancelled"
+		PAID_OUT = "paid_out", "Paid Out"
 
 	onboarding = models.ForeignKey("onboarding.FarmerOnboarding", on_delete=models.PROTECT, related_name="policies")
 	policy_number = models.CharField(max_length=40, unique=True)
