@@ -1,19 +1,29 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
+import { Toaster } from 'react-hot-toast';
 
 export default function Layout() {
+  const location = useLocation();
+  const isHome = location.pathname === '/';
+  const isDashboard = location.pathname === '/dashboard';
+
   return (
-    <div className="flex min-h-screen flex-col">
-      <Navbar />
-      <main className="flex-1">
+    <div className={`flex min-h-screen flex-col selection:bg-bima-yellow/50 ${isDashboard ? 'bg-[#F4F1ED]' : ''}`}>
+      <Toaster 
+        position="top-right" 
+        toastOptions={{
+          style: {
+            background: '#3A5A40',
+            color: '#fff',
+            borderRadius: '1rem',
+            border: 'none',
+          }
+        }} 
+      />
+      {!isDashboard && <Navbar />}
+      <main className={`flex-1 ${!isHome && !isDashboard ? 'pt-24' : ''}`}>
         <Outlet />
       </main>
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-6 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-          <p>© {new Date().getFullYear()} BimaGrid Protocol. Parametric climate insurance for East Africa.</p>
-          <p>Satellite-verified · M-Pesa payouts · H3 spatial indexing</p>
-        </div>
-      </footer>
     </div>
   );
 }

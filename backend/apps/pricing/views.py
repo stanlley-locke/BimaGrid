@@ -13,6 +13,10 @@ from .models import PremiumQuote, PricingRule
 from .serializers import PremiumQuoteSerializer, PricingRuleSerializer
 
 
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from .services import calculate_quote
+
 class PricingRuleViewSet(viewsets.ModelViewSet):
 	permission_classes = [permissions.IsAuthenticated, IsAdminOrReadOnly]
 	serializer_class = PricingRuleSerializer
@@ -38,3 +42,12 @@ class PremiumQuoteViewSet(viewsets.ModelViewSet):
 
 	def perform_create(self, serializer):
 		serializer.save(profile=self.request.user.profile)
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def quote_view(request):
+	try:
+		quote = calculate_quote(request.user.profile, request.data.copy())
+		return Response(PremiumQuoteSerializer(quote).data)
+	except Exception as e:
+		return Response({"error": str(e)}, status=400)

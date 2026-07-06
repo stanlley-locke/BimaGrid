@@ -25,3 +25,43 @@ class PolicyViewSet(viewsets.ModelViewSet):
 			"onboarding", "onboarding__profile", "onboarding__assigned_agent"
 		).prefetch_related("events")
 		return scope_policy_queryset(qs, self.request.user)
+
+	def create(self, request, *args, **kwargs):
+		from rest_framework.response import Response
+		from rest_framework import status
+		from datetime import date, timedelta
+		from apps.onboarding.models import FarmerOnboarding
+		from apps.pricing.engine import calculate_premium
+		from apps.policies.services import issue_policy
+		from decimal import Decimal
+
+		data = request.data
+		onboarding, _ = FarmerOnboarding.objects.get_or_create(profile=request.user.profile)
+		
+		crop = data.get("crop", "MAIZE")
+		acreage = Decimal(data.get("acreage", "1.0"))
+		h3_index = data.get("h3_index", "")
+
+		pricing = calculate_premium(crop, acreage, h3_index, [])
+		
+		policy_data = {
+			"crop": crop,
+			"insured_acreage": acreage,
+			"coverage_h3": h3_index,
+			"premium_amount": pricing["final_premium"],
+			"coverage_start": date.today(),
+			"coverage_end": date.today() + timedelta(days=180),
+		}
+
+		policy = issue_policy(onboarding, policy_data)
+		serializer = self.get_serializer(policy)
+		return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+	from rest_framework.decorators import action
+	from rest_framework.response import Response
+
+	@action(detail=True, methods=["get"])
+	def status(self, request, pk=None):
+		from rest_framework.response import Response
+		policy = self.get_object()
+		return Response({"status": policy.status})

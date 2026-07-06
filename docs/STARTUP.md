@@ -1,666 +1,392 @@
-# BimaGrid — Getting Started Guide
+# BimaGrid — Project Startup & Installation Guide
 
-> **Complete development setup guide for all BimaGrid services**
-
----
-
-## Table of Contents
-
-1. [Prerequisites](#prerequisites)
-2. [Quick Start with Docker](#quick-start-with-docker)
-3. [Manual Development Setup](#manual-development-setup)
-4. [Environment Configuration](#environment-configuration)
-5. [Running Tests](#running-tests)
-6. [gRPC Development](#grpc-development)
-7. [Useful Commands](#useful-commands)
-8. [Troubleshooting](#troubleshooting)
+> Get the full BimaGrid stack running locally in minutes.
 
 ---
 
 ## Prerequisites
 
-Ensure all tools are installed before proceeding.
-
-| Tool | Minimum Version | Install Link |
-|------|----------------|-------------|
-| **Git** | 2.40+ | https://git-scm.com/downloads |
-| **Python** | 3.12+ | https://www.python.org/downloads/ |
-| **Node.js** | 20 LTS | https://nodejs.org/en/download |
-| **npm** | 10+ | Bundled with Node.js |
-| **Rust** | 1.78 stable | https://rustup.rs/ |
-| **Cargo** | 1.78+ | Bundled with Rust |
-| **Docker** | 26+ | https://docs.docker.com/get-docker/ |
-| **Docker Compose** | 2.27+ | https://docs.docker.com/compose/install/ |
-| **PostgreSQL** | 16+ | https://www.postgresql.org/download/ |
-| **Redis** | 7.2+ | https://redis.io/download |
-| **grpcurl** | latest | https://github.com/fullstorydev/grpcurl/releases |
-| **Hardhat (via npm)** | 2.22+ | Installed via `npm install` in contracts/ |
-| **protoc** | 25+ | https://github.com/protocolbuffers/protobuf/releases |
-
-### Verify installations
-
-```bash
-git --version          # git version 2.43.0
-python3 --version      # Python 3.12.x
-node --version         # v20.x.x
-npm --version          # 10.x.x
-rustc --version        # rustc 1.78.0
-cargo --version        # cargo 1.78.0
-docker --version       # Docker version 26.x
-docker compose version # Docker Compose version v2.27.x
-```
+| Tool | Minimum Version | Install |
+|---|---|---|
+| Docker + Docker Compose | 24.0 / 2.20 | https://docs.docker.com/get-docker/ |
+| Python | 3.12 | https://www.python.org/downloads/ |
+| Node.js | 20 LTS | https://nodejs.org/ |
+| Rust toolchain | 1.78 | https://rustup.rs/ |
+| Git | 2.40 | https://git-scm.com/ |
+| protobuf-compiler | 3.x | `apt install protobuf-compiler` / `brew install protobuf` |
+| grpcurl (optional) | latest | https://github.com/fullstorydev/grpcurl |
 
 ---
 
-## Quick Start with Docker
+## Quick Start — Docker (Recommended)
 
-The fastest way to run all BimaGrid services locally.
+Get everything running in 5 commands:
 
 ```bash
 # 1. Clone the repository
 git clone https://github.com/your-org/BimaGrid.git && cd BimaGrid
 
-# 2. Copy environment file and fill in your values
+# 2. Configure environment
 cp .env.example .env
+# Edit .env — at minimum set SECRET_KEY and POSTGRES_PASSWORD
 
-# 3. Build all Docker images
-docker compose build
+# 3. Generate gRPC Python stubs
+bash scripts/generate_grpc.sh
 
-# 4. Start all services (detached)
+# 4. Start all services (postgres, redis, backend, ussd, celery, oracle, frontend, nginx, hardhat)
 docker compose up -d
 
-# 5. Run database migrations
-docker compose exec backend python manage.py migrate
-docker compose exec ussd python manage.py migrate
+# 5. Apply migrations and create superuser
+docker compose exec backend python manage.py migrate --noinput
+docker compose exec backend python manage.py createsuperuser
 ```
 
-After startup, services are available at:
-
+**Services available at:**
 | Service | URL |
-|---------|-----|
-| Frontend | http://localhost:3000 |
-| Backend REST API | http://localhost:8000/api/v1/ |
+|---|---|
+| Django REST API | http://localhost:8000/api/ |
 | Django Admin | http://localhost:8000/admin/ |
-| API Gateway | http://localhost:3001/api/ |
-| USSD Microservice | http://localhost:8001/ |
+| API Gateway | http://localhost:3001 |
+| Frontend | http://localhost:3000 |
+| USSD Microservice | http://localhost:8001 |
 | gRPC Server | localhost:50051 |
-| Celery Flower | http://localhost:5555 |
+| Hardhat Node | http://localhost:8545 |
+| Nginx (main entry) | http://localhost:80 |
 
 ---
 
 ## Manual Development Setup
 
-### 1. Clone the Repository
+### 1. Clone & Configure
 
 ```bash
 git clone https://github.com/your-org/BimaGrid.git
 cd BimaGrid
-```
-
-### 2. Copy Environment File
-
-```bash
 cp .env.example .env
-# Edit .env with your local credentials
-nano .env
 ```
+
+Open `.env` and fill in the required values (see [Environment Configuration](#environment-configuration) below).
 
 ---
 
-### 3. Backend (Django REST + gRPC) — Port 8000 / 50051
+### 2. Django Backend (Python)
 
 ```bash
 cd backend
 
 # Create and activate virtual environment
-python3 -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
 
 # Install dependencies
 pip install --upgrade pip
 pip install -r requirements/base.txt
-pip install -r requirements/dev.txt
+pip install -r requirements/test.txt   # for running tests
 
-# Set environment variables (or ensure .env is loaded)
-export DJANGO_SETTINGS_MODULE=bimagrid.settings.development
+# Apply database migrations
+python manage.py migrate --noinput
 
-# Run database migrations
-python manage.py migrate
+# Load initial fixtures (pricing rules, crop data)
+python manage.py loaddata fixtures/initial_pricing_rules.json
 
-# Create admin superuser
+# Create a superuser
 python manage.py createsuperuser
 
-# Collect static files
-python manage.py collectstatic --no-input
+# Generate Swahili/English translations
+python manage.py compilemessages
 
-# Start Django development server (REST API on port 8000)
+# Collect static files
+python manage.py collectstatic --noinput
+
+# Start the development server
 python manage.py runserver 0.0.0.0:8000
 
-# In a separate terminal: start gRPC server on port 50051
-python manage.py grpcserver --port 50051
+# In a separate terminal — start the gRPC server
+python manage.py run_grpc_server     # listens on port 50051
 
-# In a separate terminal: start Celery worker
-celery -A bimagrid worker --loglevel=info
+# In another terminal — start Celery worker
+celery -A config worker -l INFO -Q default,payouts,notifications
 
-# In a separate terminal: start Celery Beat scheduler
-celery -A bimagrid beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+# Celery beat scheduler (yet another terminal)
+celery -A config beat -l INFO
 ```
 
 ---
 
-### 4. USSD Microservice — Port 8001
+### 3. USSD Microservice (Python)
 
 ```bash
 cd ussd
 
-# Create and activate virtual environment
-python3 -m venv venv
-source venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate
 
-# Install dependencies
 pip install --upgrade pip
-pip install -r requirements.txt
+pip install -r requirements/base.txt
 
-# Set environment variables
-export DJANGO_SETTINGS_MODULE=ussd_service.settings
-export BACKEND_GRPC_HOST=localhost
-export BACKEND_GRPC_PORT=50051
-
-# Run database migrations
-python manage.py migrate
-
-# Start USSD service on port 8001
+python manage.py migrate --noinput
 python manage.py runserver 0.0.0.0:8001
 ```
 
-The USSD service expects incoming POST requests from Africa's Talking at:
-`POST http://localhost:8001/ussd/callback/`
-
-Configure your Africa's Talking sandbox callback URL to point here (use ngrok for local development):
-```bash
-ngrok http 8001
-# Then set callback URL in Africa's Talking dashboard to:
-# https://<ngrok-id>.ngrok.io/ussd/callback/
-```
+Make sure `BACKEND_URL=http://localhost:8000` and `GRPC_BACKEND_TARGET=localhost:50051` are set in `.env`.
 
 ---
 
-### 5. Smart Contracts (Solidity / Hardhat)
+### 4. Smart Contracts (Hardhat)
 
 ```bash
 cd contracts
 
-# Install Node.js dependencies
 npm install
 
-# Start local Hardhat node (separate terminal, keeps running)
+# Start local Hardhat Ethereum node (keep this terminal open)
 npx hardhat node
-# Local RPC: http://localhost:8545
-# Chain ID: 31337
 
-# Compile contracts
-npx hardhat compile
-
-# Deploy contracts to local Hardhat node
+# In a new terminal — deploy contracts to local node
 npx hardhat run scripts/deploy.ts --network localhost
 
-# The deployment script outputs contract addresses — copy them to .env:
-# KILIMA_SHIELD_ORACLE_ADDRESS=0x...
-# POLICY_REGISTRY_ADDRESS=0x...
-# ESCROW_VAULT_ADDRESS=0x...
-# MITIGATION_VERIFIER_ADDRESS=0x...
+# Run tests
+npx hardhat test
+
+# Gas report
+REPORT_GAS=true npx hardhat test
+```
+
+After deployment, copy the printed contract addresses into your `.env`:
+```
+CONTRACT_KILIMA_SHIELD_ORACLE=0x...
+CONTRACT_POLICY_REGISTRY=0x...
+CONTRACT_ESCROW_VAULT=0x...
 ```
 
 ---
 
-### 6. Oracle Node (Rust / tokio / tonic)
+### 5. Oracle Node (Rust)
 
 ```bash
 cd oracle-node
 
-# Ensure Rust stable is active
-rustup default stable
-rustup update stable
+# Install protobuf compiler (required for tonic build.rs)
+# Ubuntu:  sudo apt install protobuf-compiler
+# macOS:   brew install protobuf
 
-# Build in debug mode (faster compilation)
-cargo build
+# Edit oracle config
+cp oracle-config-1.toml.example oracle-config-1.toml
+# Set signing_key, contract_address, backend_url
 
-# Configure environment (copy and edit)
-cp .env.example .env
-# Set ORACLE_PRIVATE_KEY, BACKEND_GRPC_HOST, NASA_POWER_API_KEY, etc.
+# Build and run
+cargo run -- --config oracle-config-1.toml
 
-# Run oracle node
-cargo run
-
-# Or run with release optimizations
-cargo run --release
+# Or run in release mode
+cargo build --release
+./target/release/bimagrid-oracle --config oracle-config-1.toml
 ```
-
-The oracle node will:
-1. Connect to the gRPC backend at `BACKEND_GRPC_HOST:BACKEND_GRPC_PORT`
-2. Call `GetActivePolicyCells` to fetch monitored H3 cells
-3. Fetch satellite data from NASA POWER / CHIRPS / openEO APIs
-4. Evaluate thresholds and sign data with secp256k1
-5. Submit via `SubmitOracleData` gRPC call every `ORACLE_POLL_INTERVAL_SECS`
 
 ---
 
-### 7. Frontend (React / Next.js) — Port 3000
+### 6. API Gateway (Node.js/TypeScript)
+
+```bash
+cd api/gateway
+
+npm install
+
+# Development (hot-reload)
+npm run dev
+
+# Production build
+npm run build
+npm start
+```
+
+Gateway runs on port `3001` and proxies:
+- `http://localhost:3001/api/*` → Django Backend
+- `http://localhost:3001/ussd/*` → USSD Microservice
+
+---
+
+### 7. Frontend (Next.js)
 
 ```bash
 cd frontend
 
-# Install dependencies
 npm install
 
-# Set up environment
-cp .env.local.example .env.local
-# Edit .env.local with API gateway URL, Mapbox token, etc.
+# Development server
+npm run dev     # http://localhost:3000
 
-# Start development server
-npm run dev
-# Available at http://localhost:3000
-
-# Type check
-npx tsc --noEmit
-
-# Build for production
+# Production build
 npm run build
+npm start
 ```
 
 ---
 
-### 8. API Gateway (Node.js / TypeScript / Express) — Port 3001
+### 8. Generate gRPC Stubs
+
+Run this whenever `protos/bimagrid.proto` changes:
 
 ```bash
-cd gateway
+# From project root
+bash scripts/generate_grpc.sh
 
-# Install dependencies
-npm install
-
-# Set up environment
-cp .env.example .env
-
-# Start development server with hot reload
-npm run dev
-# Available at http://localhost:3001
-
-# Type check
-npx tsc --noEmit
-
-# Build production bundle
-npm run build
-npm run start
+# This generates:
+#   backend/apps/grpc_services/bimagrid_pb2.py
+#   backend/apps/grpc_services/bimagrid_pb2_grpc.py
+#   ussd/src/grpc_services/bimagrid_pb2.py
+#   ussd/src/grpc_services/bimagrid_pb2_grpc.py
+#   (Rust stubs via cargo build + build.rs automatically)
 ```
 
 ---
 
 ## Environment Configuration
 
-Copy `.env.example` to `.env` and set the following variables. Variables marked **required** must be set for the service to start; **optional** variables have defaults.
+Copy `.env.example` to `.env` and configure all variables:
 
-### Core / Shared
-
-| Variable | Required | Description | Example Value |
-|----------|----------|-------------|---------------|
-| `DJANGO_SECRET_KEY` | ✅ | Django secret key for cryptographic signing | `django-insecure-50-char-random-string` |
-| `DJANGO_DEBUG` | ✅ | Enable Django debug mode | `True` (dev) / `False` (prod) |
-| `DJANGO_ALLOWED_HOSTS` | ✅ | Comma-separated allowed hostnames | `localhost,127.0.0.1,api.bimagrid.io` |
-| `DJANGO_SETTINGS_MODULE` | ✅ | Settings module to use | `bimagrid.settings.development` |
-| `ENVIRONMENT` | ✅ | Current environment | `development` / `staging` / `production` |
-
-### Database
-
-| Variable | Required | Description | Example Value |
-|----------|----------|-------------|---------------|
-| `DATABASE_URL` | ✅ | PostgreSQL connection URL | `postgresql://bimagrid_user:password@localhost:5432/bimagrid` |
-| `DB_HOST` | ✅ | PostgreSQL host | `localhost` |
-| `DB_PORT` | ✅ | PostgreSQL port | `5432` |
-| `DB_NAME` | ✅ | Database name | `bimagrid` |
-| `DB_USER` | ✅ | Database user | `bimagrid_user` |
-| `DB_PASSWORD` | ✅ | Database password | `supersecretpassword` |
-
-### Redis / Celery
-
-| Variable | Required | Description | Example Value |
-|----------|----------|-------------|---------------|
-| `REDIS_URL` | ✅ | Redis connection URL | `redis://localhost:6379/0` |
-| `CELERY_BROKER_URL` | ✅ | Celery broker URL | `redis://localhost:6379/1` |
-| `CELERY_RESULT_BACKEND` | ✅ | Celery result backend | `redis://localhost:6379/2` |
-
-### JWT Authentication
-
-| Variable | Required | Description | Example Value |
-|----------|----------|-------------|---------------|
-| `JWT_SECRET_KEY` | ✅ | JWT signing secret | `your-jwt-secret-key-256-bits` |
-| `JWT_ACCESS_TOKEN_LIFETIME_MINUTES` | ❌ | Access token TTL | `15` |
-| `JWT_REFRESH_TOKEN_LIFETIME_DAYS` | ❌ | Refresh token TTL | `7` |
-
-### gRPC
-
-| Variable | Required | Description | Example Value |
-|----------|----------|-------------|---------------|
-| `GRPC_HOST` | ✅ | gRPC server host | `0.0.0.0` |
-| `GRPC_PORT` | ✅ | gRPC server port | `50051` |
-| `BACKEND_GRPC_HOST` | ✅ | Backend gRPC host (for USSD/Oracle) | `localhost` |
-| `BACKEND_GRPC_PORT` | ✅ | Backend gRPC port (for USSD/Oracle) | `50051` |
-
-### M-Pesa Daraja
-
-| Variable | Required | Description | Example Value |
-|----------|----------|-------------|---------------|
-| `MPESA_CONSUMER_KEY` | ✅ | Daraja API consumer key | `your-consumer-key` |
-| `MPESA_CONSUMER_SECRET` | ✅ | Daraja API consumer secret | `your-consumer-secret` |
-| `MPESA_SHORTCODE` | ✅ | M-Pesa paybill/till number | `174379` |
-| `MPESA_PASSKEY` | ✅ | STK Push passkey | `bfb279f9aa9bdbcf158e97dd71a467...` |
-| `MPESA_B2C_INITIATOR_NAME` | ✅ | B2C initiator username | `testapi` |
-| `MPESA_B2C_INITIATOR_PASSWORD` | ✅ | B2C initiator password | `Safaricom999!` |
-| `MPESA_CALLBACK_URL` | ✅ | STK Push callback URL | `https://api.bimagrid.io/api/v1/payments/mpesa/callback/` |
-| `MPESA_B2C_RESULT_URL` | ✅ | B2C result callback URL | `https://api.bimagrid.io/api/v1/payments/mpesa/b2c/result/` |
-| `MPESA_ENVIRONMENT` | ✅ | API environment | `sandbox` / `production` |
-
-### Blockchain / Smart Contracts
-
-| Variable | Required | Description | Example Value |
-|----------|----------|-------------|---------------|
-| `RPC_URL` | ✅ | Blockchain RPC endpoint | `http://localhost:8545` (dev) |
-| `CHAIN_ID` | ✅ | Blockchain chain ID | `31337` (Hardhat) / `44787` (Alfajores) / `42220` (Celo) |
-| `KILIMA_SHIELD_ORACLE_ADDRESS` | ✅ | Deployed oracle contract address | `0x5FbDB2315678afecb367f032d93F642f64180aa3` |
-| `POLICY_REGISTRY_ADDRESS` | ✅ | Deployed registry contract address | `0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512` |
-| `ESCROW_VAULT_ADDRESS` | ✅ | Deployed escrow contract address | `0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0` |
-| `MITIGATION_VERIFIER_ADDRESS` | ✅ | Deployed verifier contract address | `0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9` |
-| `BACKEND_WALLET_PRIVATE_KEY` | ✅ | Backend wallet for contract interactions | `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80` |
-
-### Oracle Node (Rust)
-
-| Variable | Required | Description | Example Value |
-|----------|----------|-------------|---------------|
-| `ORACLE_PRIVATE_KEY` | ✅ | secp256k1 private key for signing | `0x59c6995e998f97a5a0044966f094538...` |
-| `ORACLE_POLL_INTERVAL_SECS` | ❌ | How often to poll satellite APIs | `21600` (6 hours) |
-| `NASA_POWER_API_KEY` | ✅ | NASA POWER API key | `your-nasa-api-key` |
-| `NASA_POWER_BASE_URL` | ❌ | NASA POWER API base URL | `https://power.larc.nasa.gov/api` |
-| `CHIRPS_BASE_URL` | ❌ | CHIRPS data base URL | `https://data.chc.ucsb.edu/products/CHIRPS-2.0` |
-| `OPENEO_BASE_URL` | ✅ | openEO backend URL | `https://openeo.cloud` |
-| `OPENEO_CLIENT_ID` | ✅ | openEO client ID | `your-openeo-client-id` |
-| `OPENEO_CLIENT_SECRET` | ✅ | openEO client secret | `your-openeo-secret` |
-| `MOCK_SATELLITE_DATA` | ❌ | Use mock data instead of real APIs | `true` (dev) / `false` (prod) |
-
-### Africa's Talking (USSD + SMS)
-
-| Variable | Required | Description | Example Value |
-|----------|----------|-------------|---------------|
-| `AT_API_KEY` | ✅ | Africa's Talking API key | `atsk_xxxxxxxxxxxxxxxx` |
-| `AT_USERNAME` | ✅ | Africa's Talking username | `sandbox` (dev) / `bimagrid` (prod) |
-| `AT_USSD_CODE` | ✅ | USSD shortcode | `*384#` |
-| `AT_SENDER_ID` | ❌ | SMS sender ID | `BimaGrid` |
-
-### Frontend
-
-| Variable | Required | Description | Example Value |
-|----------|----------|-------------|---------------|
-| `NEXT_PUBLIC_API_URL` | ✅ | API gateway base URL | `http://localhost:3001/api` |
-| `NEXT_PUBLIC_MAPBOX_TOKEN` | ✅ | Mapbox GL JS access token | `pk.eyJ1IjoiYmltYWdyaWQiLCJh...` |
-| `NEXT_PUBLIC_CHAIN_ID` | ✅ | Blockchain chain ID | `31337` |
-
-### API Gateway
-
-| Variable | Required | Description | Example Value |
-|----------|----------|-------------|---------------|
-| `BACKEND_URL` | ✅ | Django backend URL | `http://localhost:8000` |
-| `GATEWAY_PORT` | ❌ | Gateway listen port | `3001` |
-| `RATE_LIMIT_WINDOW_MS` | ❌ | Rate limit window in ms | `60000` |
-| `RATE_LIMIT_MAX_REQUESTS` | ❌ | Max requests per window | `100` |
-| `JWT_PUBLIC_KEY` | ✅ | JWT public key for verification | `-----BEGIN PUBLIC KEY-----...` |
+| Variable | Description | Example |
+|---|---|---|
+| `SECRET_KEY` | Django secret key | `django-insecure-abc123...` |
+| `DEBUG` | Django debug mode | `True` (dev) / `False` (prod) |
+| `ALLOWED_HOSTS` | Comma-separated hostnames | `localhost,127.0.0.1` |
+| `DATABASE_ENGINE` | Django DB backend | `django.db.backends.postgresql` |
+| `DATABASE_NAME` | Database name | `bimagrid` |
+| `DATABASE_USER` | Database user | `bimagrid` |
+| `DATABASE_PASSWORD` | Database password | `strongpassword` |
+| `DATABASE_HOST` | Database host | `localhost` (Docker: `postgres`) |
+| `POSTGRES_DB` | Docker Compose Postgres DB | `bimagrid` |
+| `POSTGRES_PASSWORD` | Docker Compose Postgres password | `strongpassword` |
+| `REDIS_URL` | Redis connection URL | `redis://localhost:6379/0` |
+| `CELERY_BROKER_URL` | Celery broker | `redis://localhost:6379/0` |
+| `MPESA_CONSUMER_KEY` | M-Pesa Daraja app key | From Safaricom portal |
+| `MPESA_CONSUMER_SECRET` | M-Pesa Daraja secret | From Safaricom portal |
+| `MPESA_SHORTCODE` | M-Pesa shortcode | `174379` (sandbox) |
+| `MPESA_PASSKEY` | M-Pesa STK passkey | From Safaricom portal |
+| `MPESA_USE_MOCK` | Use mock M-Pesa | `True` (dev) |
+| `AFRICASTALKING_USERNAME` | AT username | `sandbox` |
+| `AFRICASTALKING_API_KEY` | AT API key | From AT dashboard |
+| `AFRICASTALKING_USE_MOCK` | Use mock AT | `True` (dev) |
+| `BACKEND_URL` | Backend URL for USSD service | `http://localhost:8000` |
+| `GRPC_BACKEND_TARGET` | gRPC target for USSD→Backend | `localhost:50051` |
+| `BLOCKCHAIN_RPC_URL` | Ethereum RPC endpoint | `http://localhost:8545` |
+| `ORACLE_SIGNING_KEY` | Oracle secp256k1 private key | `0x47e175...` |
+| `ORACLE_AUTHORIZED_KEYS` | Authorized oracle addresses | `0xAbc...,0xDef...` |
+| `CONTRACT_KILIMA_SHIELD_ORACLE` | Deployed oracle contract | `0x5FbD...` |
+| `OPENEO_BACKEND_URL` | openEO API endpoint | `https://earthengine.openeo.org` |
+| `OPENEO_USE_MOCK` | Use mock satellite data | `True` (dev) |
+| `IPRS_USE_MOCK` | Use mock IPRS | `True` (dev) |
+| `ARDHISASA_USE_MOCK` | Use mock land registry | `True` (dev) |
+| `NEXT_PUBLIC_API_URL` | Frontend API base URL | `http://localhost:3001/api` |
+| `NEXT_PUBLIC_CHAIN_ID` | Blockchain chain ID | `31337` (Hardhat) |
+| `INTERNAL_API_KEY` | Internal service-to-service key | `bimagrid-internal-dev-key` |
 
 ---
 
 ## Running Tests
 
-### Backend Tests (pytest)
+### Backend (pytest)
 
 ```bash
 cd backend
-source venv/bin/activate
-
-# Run all tests
-pytest
-
-# Run with coverage report
-pytest --cov=. --cov-report=html --cov-report=term-missing
-
-# Run specific test file
-pytest tests/test_policies.py -v
-
-# Run specific test by name
-pytest tests/test_policies.py::TestPolicyViewSet::test_create_policy -v
-
-# Run tests with specific markers
-pytest -m "integration" -v
-pytest -m "not slow" -v
-
-# Run with parallel workers (requires pytest-xdist)
-pytest -n auto
-
-# Run and output to XML for CI
-pytest --junitxml=test-results.xml
+pytest                                    # all tests
+pytest -v                                  # verbose
+pytest apps/payments/ -v                  # specific app
+pytest --cov=apps --cov-report=html       # with HTML coverage
+pytest -k "test_payout" -v               # filter by name
+pytest --tb=short -q                      # compact output
 ```
 
-Key test modules:
-- `tests/test_auth.py` — JWT auth, registration, token refresh
-- `tests/test_policies.py` — Policy CRUD, status transitions
-- `tests/test_claims.py` — Claim creation, threshold evaluation
-- `tests/test_payments.py` — M-Pesa STK Push, B2C callback handling
-- `tests/test_oracle.py` — Oracle data ingestion, signature verification
-- `tests/test_geospatial.py` — H3 indexing, GPS to cell conversion
-- `tests/test_grpc_services.py` — gRPC service integration tests
-
-### USSD Tests (pytest)
+### USSD Microservice (pytest)
 
 ```bash
 cd ussd
-source venv/bin/activate
-
-# Run all USSD tests
-pytest
-
-# Run with coverage
-pytest --cov=ussd_service --cov-report=term-missing -v
-
-# Test specific USSD flow
-pytest tests/test_ussd_flows.py::TestRegistrationFlow -v
-pytest tests/test_ussd_flows.py::TestPolicyPurchaseFlow -v
-pytest tests/test_ussd_flows.py::TestClaimFlow -v
-
-# Test gRPC client calls
-pytest tests/test_grpc_client.py -v
+pytest -v
+pytest tests/test_gateway.py -v
 ```
 
-Key test modules:
-- `tests/test_ussd_flows.py` — Full USSD menu navigation simulation
-- `tests/test_grpc_client.py` — gRPC stub calls to backend
-- `tests/test_session_management.py` — USSD session state machine
+### gRPC Integration Tests (pytest)
 
-### Smart Contract Tests (Hardhat)
+```bash
+# From project root
+python3 -m pytest tests/test_grpc_services.py -v
+```
+
+### Smart Contracts (Hardhat)
 
 ```bash
 cd contracts
-
-# Run all Hardhat tests
-npx hardhat test
-
-# Run with gas usage report
-REPORT_GAS=true npx hardhat test
-
-# Run specific test file
-npx hardhat test test/KilimaShieldOracle.test.ts
-npx hardhat test test/PolicyRegistry.test.ts
-npx hardhat test test/EscrowVault.test.ts
-npx hardhat test test/MitigationVerifier.test.ts
-
-# Run with verbose output
-npx hardhat test --verbose
-
-# Generate coverage report (requires solidity-coverage)
-npx hardhat coverage
-
-# Check contract sizes
-npx hardhat size-contracts
+npx hardhat test                          # all tests
+npx hardhat test test/core/ --grep "payout"   # filter
+REPORT_GAS=true npx hardhat test          # with gas report
+npx hardhat coverage                       # Solidity coverage
 ```
 
-Key test files:
-- `test/KilimaShieldOracle.test.ts` — Oracle registration, signature verification, threshold breach
-- `test/PolicyRegistry.test.ts` — Policy creation, access control, H3 indexing
-- `test/EscrowVault.test.ts` — Premium locking, payout authorization, reentrancy protection
-- `test/MitigationVerifier.test.ts` — Merkle proof verification, mitigation records
-
-### gRPC Integration Tests
-
-```bash
-cd backend
-source venv/bin/activate
-
-# Run gRPC-specific integration tests
-python3 -m pytest tests/test_grpc_services.py -v
-
-# Test OracleService methods
-python3 -m pytest tests/test_grpc_services.py::TestOracleService -v
-
-# Test UssdService methods
-python3 -m pytest tests/test_grpc_services.py::TestUssdService -v
-
-# Test with gRPC server running (requires backend to be up)
-python3 -m pytest tests/test_grpc_services.py -v --grpc-host=localhost --grpc-port=50051
-```
-
-### Oracle Node Tests (Rust / cargo)
+### Oracle Node (Rust)
 
 ```bash
 cd oracle-node
-
-# Run all unit and integration tests
-cargo test
-
-# Run with output (print statements visible)
-cargo test -- --nocapture
-
-# Run specific test module
-cargo test satellite_fetcher::tests
-
-# Run specific test function
-cargo test test_h3_cell_conversion
-
-# Run with release optimizations
-cargo test --release
-
-# Run with code coverage (requires cargo-tarpaulin)
-cargo tarpaulin --out Html
-
-# Check for common issues
-cargo clippy --all-targets --all-features
+cargo test                                # all tests
+cargo test -- --nocapture                # with stdout
+cargo test crypto                         # filter by module
 ```
 
-Key test modules:
-- `src/satellite/tests.rs` — NASA POWER / CHIRPS / openEO fetch mocks
-- `src/signing/tests.rs` — secp256k1 key generation, signing, verification
-- `src/grpc/tests.rs` — gRPC client connection and retry logic
-- `src/h3/tests.rs` — H3 cell resolution, GPS conversion, bytes32 packing
-
-### API Gateway Tests
+### API Gateway
 
 ```bash
-cd gateway
-
-# Check gateway is healthy
-curl -s http://localhost:3001/health | jq .
-
-# Run Jest unit tests
-npm test
-
-# Run with coverage
-npm test -- --coverage
-
-# Test rate limiting (should return 429 after 100 requests/min)
-for i in $(seq 1 110); do
-  curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3001/api/v1/health/
-done
-
-# Type check without compiling
-npx tsc --noEmit
+cd api/gateway
+npm test                                  # Jest tests
+curl http://localhost:3001/health         # manual health check
 ```
 
 ---
 
 ## gRPC Development
 
-### Regenerate Python Stubs from Proto
+### Regenerate Stubs After Proto Changes
 
 ```bash
-# From project root
-chmod +x scripts/generate_grpc.sh
-./scripts/generate_grpc.sh
+# Install tools (once)
+pip install grpcio-tools
 
-# Or manually:
-cd proto
-python -m grpc_tools.protoc \
-  -I. \
-  --python_out=../backend/bimagrid/grpc_services/generated \
-  --grpc_python_out=../backend/bimagrid/grpc_services/generated \
-  --python_out=../ussd/ussd_service/grpc_client/generated \
-  --grpc_python_out=../ussd/ussd_service/grpc_client/generated \
-  bimagrid.proto
+# Regenerate
+bash scripts/generate_grpc.sh
 ```
 
-### Regenerate Rust Stubs from Proto
-
-Tonic builds are configured in `oracle-node/build.rs`. Stubs regenerate automatically on `cargo build`:
-
-```bash
-cd oracle-node
-cargo build
-# build.rs runs tonic-build::compile_protos("../proto/bimagrid.proto")
-```
-
-### Start gRPC Server for Testing
+### Start gRPC Server
 
 ```bash
 cd backend
-source venv/bin/activate
-python manage.py grpcserver --port 50051
+python manage.py run_grpc_server
+# → Starting gRPC server on [::]:50051
 ```
 
-### Test gRPC with grpcurl
+### Test with grpcurl
 
 ```bash
-# List all available services
+# List services
 grpcurl -plaintext localhost:50051 list
 
-# Describe a service
-grpcurl -plaintext localhost:50051 describe bimagrid.OracleService
+# List methods of UssdService
+grpcurl -plaintext localhost:50051 describe bimagrid.UssdService
 
-# Call SubmitOracleData
+# Call GetPolicyStatus
 grpcurl -plaintext \
-  -d '{
-    "h3_cells": ["8928308280fffff"],
-    "rainfall_mm": 38.5,
-    "ndvi_score": 0.42,
-    "evapotranspiration": 5.2,
-    "timestamp": 1717200000,
-    "oracle_pubkey": "02abc123..."
-  }' \
-  localhost:50051 bimagrid.OracleService/SubmitOracleData
-
-# Call GetActivePolicyCells
-grpcurl -plaintext \
-  -d '{"active_only": true}' \
-  localhost:50051 bimagrid.OracleService/GetActivePolicyCells
-
-# Call UssdService.GetPolicyStatus
-grpcurl -plaintext \
-  -d '{"farmer_phone": "+254712345678"}' \
+  -d '{"phone": "254700000000"}' \
   localhost:50051 bimagrid.UssdService/GetPolicyStatus
 
-# Health check (requires grpc.health.v1.Health)
-grpcurl -plaintext localhost:50051 grpc.health.v1.Health/Check
+# Submit Oracle Data
+grpcurl -plaintext \
+  -d '{
+    "oracle_id": "oracle-1",
+    "h3_index": "8928308280fffff",
+    "timestamp": "2026-07-02T23:00:00Z",
+    "rainfall_mm": 12.5,
+    "ndvi": 0.55,
+    "soil_moisture": 0.28,
+    "data_sources": ["nasa-power", "chirps"],
+    "signature": "0xdeadbeef"
+  }' \
+  localhost:50051 bimagrid.OracleService/SubmitData
 ```
 
 ---
@@ -668,177 +394,38 @@ grpcurl -plaintext localhost:50051 grpc.health.v1.Health/Check
 ## Useful Commands
 
 | Task | Command |
-|------|---------|
-| **Start all services (Docker)** | `docker compose up -d` |
-| **Stop all services** | `docker compose down` |
-| **View all service logs** | `docker compose logs -f` |
-| **View specific service logs** | `docker compose logs -f backend` |
-| **Backend shell** | `docker compose exec backend python manage.py shell` |
-| **Run migrations** | `docker compose exec backend python manage.py migrate` |
-| **Create superuser** | `docker compose exec backend python manage.py createsuperuser` |
-| **Restart single service** | `docker compose restart backend` |
-| **Rebuild single service** | `docker compose build backend && docker compose up -d backend` |
-| **Django DB shell** | `docker compose exec backend python manage.py dbshell` |
-| **PostgreSQL CLI** | `psql -h localhost -U bimagrid_user -d bimagrid` |
-| **Redis CLI** | `redis-cli -h localhost ping` |
-| **Flush Redis cache** | `redis-cli -h localhost FLUSHDB` |
-| **Celery worker status** | `docker compose exec celery celery -A bimagrid inspect active` |
-| **Purge Celery queue** | `docker compose exec celery celery -A bimagrid purge` |
-| **Contract compilation** | `cd contracts && npx hardhat compile` |
-| **Contract deployment (local)** | `cd contracts && npx hardhat run scripts/deploy.ts --network localhost` |
-| **Format Python code** | `cd backend && black . && isort .` |
-| **Lint Python code** | `cd backend && flake8 .` |
-| **Format Rust code** | `cd oracle-node && cargo fmt` |
-| **Lint Rust code** | `cd oracle-node && cargo clippy` |
-| **Format TypeScript** | `cd frontend && npx prettier --write .` |
-| **Generate proto docs** | `protoc --doc_out=docs/ --doc_opt=markdown,proto.md proto/bimagrid.proto` |
+|---|---|
+| Start all Docker services | `docker compose up -d` |
+| Stop all services | `docker compose down` |
+| Rebuild and restart | `docker compose up -d --build` |
+| View backend logs | `docker compose logs -f backend` |
+| Django shell | `docker compose exec backend python manage.py shell` |
+| Run migrations | `docker compose exec backend python manage.py migrate` |
+| Create superuser | `docker compose exec backend python manage.py createsuperuser` |
+| Import crop risk data | `docker compose exec backend python manage.py import_crop_risk_constants` |
+| Deploy contracts (local) | `cd contracts && npx hardhat run scripts/deploy.ts --network localhost` |
+| Full backend test suite | `cd backend && pytest -v` |
+| Full contract tests | `cd contracts && npx hardhat test` |
+| Generate gRPC stubs | `bash scripts/generate_grpc.sh` |
+| Run gRPC server | `cd backend && python manage.py run_grpc_server` |
+| Celery worker (manual) | `cd backend && celery -A config worker -l INFO` |
+| Check Celery tasks | `cd backend && celery -A config inspect active` |
+| Oracle node (dev) | `cd oracle-node && cargo run` |
+| Reset Docker volumes | `docker compose down -v` |
 
 ---
 
 ## Troubleshooting
 
-### `django.db.utils.OperationalError: could not connect to server`
-
-**Cause**: PostgreSQL is not running or `DATABASE_URL` is incorrect.
-
-```bash
-# Check if PostgreSQL is running
-pg_isready -h localhost -p 5432
-
-# Start PostgreSQL (Linux systemd)
-sudo systemctl start postgresql
-
-# Docker: check postgres container
-docker compose ps postgres
-docker compose logs postgres
-
-# Verify DATABASE_URL in .env
-echo $DATABASE_URL
-```
-
----
-
-### `redis.exceptions.ConnectionError: Error 111 connecting to localhost:6379`
-
-**Cause**: Redis is not running.
-
-```bash
-# Check Redis
-redis-cli ping
-
-# Start Redis (Linux)
-sudo systemctl start redis
-
-# Docker: check redis container
-docker compose ps redis
-docker compose logs redis
-```
-
----
-
-### `ModuleNotFoundError: No module named 'bimagrid_pb2'`
-
-**Cause**: gRPC Python stubs have not been generated.
-
-```bash
-# Regenerate stubs
-./scripts/generate_grpc.sh
-
-# Or manually
-pip install grpcio-tools
-python -m grpc_tools.protoc -I./proto --python_out=./backend --grpc_python_out=./backend ./proto/bimagrid.proto
-```
-
----
-
-### `Error: Cannot find module '@/components/...'`
-
-**Cause**: Frontend dependencies not installed or tsconfig paths misconfigured.
-
-```bash
-cd frontend
-rm -rf node_modules .next
-npm install
-npm run dev
-```
-
----
-
-### `error[E0433]: failed to resolve: use of undeclared crate or module`
-
-**Cause**: Rust dependencies not downloaded.
-
-```bash
-cd oracle-node
-cargo clean
-cargo build
-```
-
----
-
-### Oracle Node: `Error: ORACLE_PRIVATE_KEY is not set`
-
-**Cause**: Missing environment variable.
-
-```bash
-# Generate a new secp256k1 private key for development
-cd oracle-node
-cargo run --example generate_keypair
-# Outputs: Private key: 0x... | Public key: 02...
-# Add to .env: ORACLE_PRIVATE_KEY=0x...
-```
-
----
-
-### `hardhat: command not found`
-
-**Cause**: Hardhat not installed or not in PATH.
-
-```bash
-cd contracts
-npm install
-npx hardhat --version
-# Use npx hardhat (not hardhat directly)
-```
-
----
-
-### M-Pesa STK Push returns `Invalid Access Token`
-
-**Cause**: Daraja credentials incorrect or token expired.
-
-```bash
-# Manually test token generation
-curl -u "$MPESA_CONSUMER_KEY:$MPESA_CONSUMER_SECRET" \
-  https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials
-
-# Ensure MPESA_ENVIRONMENT=sandbox for development
-# Ensure callback URL is publicly accessible (use ngrok for local dev)
-ngrok http 8000
-```
-
----
-
-### Port already in use
-
-```bash
-# Find process using port 8000
-lsof -i :8000
-# Kill the process
-kill -9 <PID>
-
-# Or use fuser
-fuser -k 8000/tcp
-```
-
----
-
-### Docker: `no space left on device`
-
-```bash
-# Clean up unused Docker resources
-docker system prune -af --volumes
-
-# Check disk usage
-docker system df
-```
+| Problem | Cause | Fix |
+|---|---|---|
+| `django.db.OperationalError: FATAL: role "bimagrid" does not exist` | Postgres not initialized | Run `docker compose up -d postgres` first and wait for healthcheck |
+| `ModuleNotFoundError: No module named 'bimagrid_pb2'` | gRPC stubs not generated | Run `bash scripts/generate_grpc.sh` |
+| `cargo: command not found` | Rust not installed | Run `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \| sh` |
+| `protoc: command not found` | protobuf-compiler missing | Ubuntu: `sudo apt install protobuf-compiler` / macOS: `brew install protobuf` |
+| `EADDRINUSE :3001` | API Gateway port in use | `lsof -ti:3001 \| xargs kill` |
+| Oracle `UnauthorizedOracle` revert | Oracle address not whitelisted | Call `oracle.setAuthorizedOracle(address, true)` from contract owner |
+| `grpcurl: connection refused :50051` | gRPC server not running | `cd backend && python manage.py run_grpc_server` |
+| M-Pesa callback not received | ngrok / tunnel needed | Use `ngrok http 8000` and set `MPESA_CALLBACK_BASE_URL=https://xxx.ngrok.io` |
+| `celery: No module named config` | Wrong working directory | Always run Celery from `backend/` directory |
+| Docker OOM (Out of Memory) | Insufficient RAM for all services | Increase Docker Desktop memory limit to ≥4GB, or start only core services |

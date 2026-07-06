@@ -36,11 +36,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DJANGO_SETTINGS_MODULE=src.gateway.settings
 
-WORKDIR /app/ussd
-COPY ussd/ .
-
 RUN useradd -r -u 1002 -s /bin/false ussd \
+    && mkdir -p /app/ussd \
     && chown -R ussd:ussd /app
+
+WORKDIR /app/ussd
+COPY --chown=ussd:ussd ussd/ .
 
 USER ussd
 

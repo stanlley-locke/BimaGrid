@@ -50,7 +50,7 @@ class MpesaCallbackView(APIView):
 		payment = handle_stk_callback(request.data)
 		if payment:
 			return Response({"ResultCode": 0, "ResultDesc": "Accepted"})
-		return Response({"ResultCode": 1, "ResultDesc": "Unknown checkout"}, status=status.HTTP_404_NOT_FOUND)
+		return Response({"ResultCode": 0, "ResultDesc": "Accepted - Unknown checkout"})
 
 
 class MpesaResultView(APIView):

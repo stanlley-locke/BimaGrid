@@ -22,7 +22,6 @@ services:
   # ──────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
-    container_name: bimagrid-postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-bimagrid}
@@ -46,7 +45,6 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: bimagrid-redis
     restart: unless-stopped
     volumes:
       - redis-data:/data
@@ -68,7 +66,6 @@ services:
   # ──────────────────────────────────────────────
   hardhat:
     image: node:20-alpine
-    container_name: bimagrid-hardhat
     restart: unless-stopped
     working_dir: /contracts
     volumes:
@@ -97,7 +94,6 @@ services:
   # ──────────────────────────────────────────────
   backend:
     build: *backend-build
-    container_name: bimagrid-backend
     <<: *backend-env
     ports:
       - "8000:8000"
@@ -119,7 +115,6 @@ services:
   # ──────────────────────────────────────────────
   celery-worker:
     build: *backend-build
-    container_name: bimagrid-celery-worker
     <<: *backend-env
     command: >
       celery -A config worker
@@ -142,7 +137,6 @@ services:
   # ──────────────────────────────────────────────
   celery-beat:
     build: *backend-build
-    container_name: bimagrid-celery-beat
     <<: *backend-env
     command: >
       celery -A config beat
@@ -163,7 +157,6 @@ services:
     build:
       context: .
       dockerfile: ussd/Dockerfile
-    container_name: bimagrid-ussd
     env_file: .env
     environment:
       BACKEND_URL: http://backend:8000
@@ -188,7 +181,6 @@ services:
     build:
       context: .
       dockerfile: oracle-node/Dockerfile
-    container_name: bimagrid-oracle-node
     environment:
       BACKEND_GRPC_URL: http://backend:50051
       BLOCKCHAIN_RPC_URL: http://hardhat:8545
@@ -208,7 +200,6 @@ services:
     build:
       context: .
       dockerfile: api/gateway/Dockerfile
-    container_name: bimagrid-api-gateway
     environment:
       BACKEND_URL: http://backend:8000
       USSD_URL: http://ussd:8001
@@ -231,7 +222,6 @@ services:
   #   build:
   #     context: frontend
   #     dockerfile: Dockerfile
-  #   container_name: bimagrid-frontend
   #   environment:
   #     NEXT_PUBLIC_API_URL: http://localhost:3001
   #     NODE_ENV: development
@@ -254,7 +244,6 @@ services:
     build:
       context: .
       dockerfile: infrastructure/docker/Dockerfiles/nginx.Dockerfile
-    container_name: bimagrid-nginx
     ports:
       - "80:80"
       - "443:443"

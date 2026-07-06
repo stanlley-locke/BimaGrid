@@ -74,3 +74,16 @@ class BypassPaymentView(APIView):
 			},
 			status=status.HTTP_200_OK,
 		)
+
+
+class AdminStatsView(APIView):
+	permission_classes = [permissions.IsAuthenticated, IsAdminUser]
+
+	def get(self, request):
+		return Response(
+			{
+				"total_policies": Policy.objects.count(),
+				"total_payouts": 0,
+			},
+			status=status.HTTP_200_OK,
+		)

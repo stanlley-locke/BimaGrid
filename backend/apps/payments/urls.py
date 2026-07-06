@@ -14,8 +14,8 @@ from .views import (
 
 
 router = DefaultRouter()
+router.register(r"payments/payouts", PayoutViewSet, basename="payout")
 router.register(r"payments", PaymentTransactionViewSet, basename="payment-transaction")
-router.register(r"payouts", PayoutViewSet, basename="payout")
 
 urlpatterns = [
 	path("payments/mpesa/callback/", MpesaCallbackView.as_view(), name="mpesa-callback"),

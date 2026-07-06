@@ -12,5 +12,6 @@ router.register(r"oracle-consensus", OracleConsensusViewSet, basename="oracle-co
 
 urlpatterns = [
 	path("oracles/submit-data/", OracleSubmitDataView.as_view(), name="oracle-submit-data"),
+	path("oracles/", OracleSubmissionViewSet.as_view({"get": "list"}), name="oracles-list"),
 	*router.urls,
 ]

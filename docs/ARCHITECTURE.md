@@ -1,29 +1,14 @@
-# BimaGrid System Architecture
+# BimaGrid — System Architecture
 
-> **Decentralized Parametric Climate Insurance for East African Smallholder Farmers**
-
----
-
-## Table of Contents
-
-1. [Executive Summary](#executive-summary)
-2. [Architecture Overview](#architecture-overview)
-3. [Service Topology](#service-topology)
-4. [Parametric Claim Lifecycle](#parametric-claim-lifecycle)
-5. [gRPC Protocol Architecture](#grpc-protocol-architecture)
-6. [Smart Contract Architecture](#smart-contract-architecture)
-7. [Spatial Indexing](#spatial-indexing)
-8. [Security Architecture](#security-architecture)
-9. [Technology Stack Reference](#technology-stack-reference)
-10. [Infrastructure & Deployment](#infrastructure--deployment)
+> Decentralized Parametric Climate Insurance Protocol for East African Smallholder Farmers
 
 ---
 
 ## Executive Summary
 
-BimaGrid is a decentralized parametric climate insurance protocol designed to protect East African smallholder farmers against catastrophic weather events — including drought, flood, and crop failure — without requiring traditional claims assessment. Unlike conventional agricultural insurance, BimaGrid uses verifiable on-chain satellite data (NASA POWER, CHIRPS precipitation records, and openEO multispectral imagery) as objective triggers for automatic payouts. When a farmer's field, identified by its Uber H3 spatial index, experiences a measurable climate threshold breach — such as rainfall dropping below 40mm over a 30-day accumulation window — the protocol autonomously executes a payout via M-Pesa Daraja B2C within minutes, not weeks.
+BimaGrid is a fully decentralized, multi-peril parametric insurance protocol engineered for smallholder and subsistence farmers across East Africa. By combining Uber H3 high-resolution spatial indexing, cloud-native satellite computing via openEO, independent Rust Oracle Nodes, and trustless Solidity smart contract execution on EVM-compatible blockchains, BimaGrid completely removes human bias, manual claims adjustment, and multi-month processing delays from agricultural climate insurance. Farmers register via USSD (*384#) in under 2 minutes using any basic mobile phone, and receive parametric payouts directly to their M-Pesa wallets within 60 seconds of on-chain consensus — zero paperwork, zero claims adjusters.
 
-The platform bridges the gap between blockchain-native decentralized finance and low-connectivity rural communities through a USSD interface accessible on any mobile handset via Africa's Talking shortcode `*384#`. Farmers register, purchase policies, and receive status updates entirely through 2G USSD sessions, while the underlying infrastructure operates across a multi-service architecture: a Django REST + gRPC backend, Rust-based oracle nodes that cryptographically sign satellite observations, Solidity smart contracts governing policy escrow and claim settlement, and a React/Next.js dashboard for program administrators. Every oracle data submission is signed with secp256k1 ECDSA and verified on-chain before any payout is authorized, ensuring that no single party can manipulate weather outcomes or fraudulently trigger claims.
+The protocol is composed of six discrete, independently deployable services communicating over a combination of REST/JSON, gRPC (HTTP/2 + Protocol Buffers), and direct blockchain RPC. A Rust Oracle Node daemon fetches daily satellite climate data (NASA POWER rainfall, openEO NDVI, CHIRPS precipitation), cryptographically signs each reading using secp256k1 ECDSA, and broadcasts it simultaneously to the Django Backend via gRPC and to the `KilimaShieldOracle` smart contract via ethers-rs. When three independent oracle nodes reach a median consensus that rainfall has fallen below a farmer's registered threshold, the `EscrowVault` contract executes an automatic ETH payout which the Django Celery worker converts into a real-time M-Pesa Daraja B2C transfer.
 
 ---
 
@@ -31,101 +16,82 @@ The platform bridges the gap between blockchain-native decentralized finance and
 
 ```mermaid
 flowchart LR
-    subgraph Farmers["Farmers - Field"]
-        F1[Mobile Phone 2G/USSD]
-        F2[Smartphone Web App]
+    subgraph Farmer["👨‍🌾 Farmer Access"]
+        USSD_PHONE["Basic Phone\n*384#"]
+        WEB["Web Browser\n(React Portal)"]
     end
 
-    subgraph Edge["Edge / Gateway"]
-        AT["Africa's Talking USSD Gateway *384#"]
-        NG[API Gateway Node.js/TypeScript Port 3001]
-        NX[Nginx Reverse Proxy SSL Termination]
+    subgraph Gateway["🌐 Network Layer"]
+        AT["Africa's Talking\nUSSD Gateway"]
+        NGINX["Nginx\nReverse Proxy :80/:443"]
+        GW["API Gateway\nNode.js/Express :3001"]
     end
 
-    subgraph Frontend["Frontend"]
-        FE[React / Next.js Port 3000]
+    subgraph Services["⚙️ Core Services"]
+        USSD_SVC["USSD Microservice\nPython/Django :8001"]
+        BACKEND["Django Backend\nPython :8000 gRPC :50051"]
+        CELERY["Celery Worker\n+ Beat Scheduler"]
+        ORACLE["Oracle Node\nRust/Tokio"]
     end
 
-    subgraph CoreBackend["Core Backend"]
-        DJ[Django REST API Python 3.12 Port 8000]
-        GR[gRPC Server Port 50051]
-        CL[Celery Workers Async Tasks]
-        BE[Celery Beat Scheduler]
+    subgraph Data["🗄️ Data Layer"]
+        PG["PostgreSQL 16"]
+        REDIS["Redis 7"]
     end
 
-    subgraph USSD["USSD Microservice"]
-        US[Django USSD Python 3.12 Port 8001]
+    subgraph Blockchain["⛓️ Blockchain"]
+        HARDHAT["Hardhat Node\n(dev) :8545"]
+        CONTRACTS["KilimaShieldOracle\nPolicyRegistry\nEscrowVault"]
     end
 
-    subgraph Oracle["Oracle Node"]
-        OR[Rust Oracle tokio + tonic secp256k1 Signer]
-        NS[NASA POWER API]
-        CH[CHIRPS Rainfall Data]
-        OE[openEO Satellite Imagery]
+    subgraph External["🛰️ External APIs"]
+        NASA["NASA POWER\nRainfall/Temp"]
+        CHIRPS["CHIRPS\nPrecipitation"]
+        OPENEO["openEO\nNDVI/EVI"]
+        MPESA["M-Pesa Daraja\nB2C Payouts"]
+        SMS["Africa's Talking\nSMS Notifications"]
     end
 
-    subgraph Blockchain["Blockchain Layer"]
-        KO[KilimaShieldOracle Contract]
-        PR[PolicyRegistry Contract]
-        EV[EscrowVault Contract]
-        MV[MitigationVerifier Contract]
-    end
-
-    subgraph DataLayer["Data Layer"]
-        PG[(PostgreSQL 16)]
-        RD[(Redis 7)]
-    end
-
-    subgraph Payments["Payments"]
-        MP[M-Pesa Daraja B2C API]
-    end
-
-    F1 -->|USSD Session| AT
-    F2 -->|HTTPS| NX
-    AT -->|HTTP POST| US
-    NX --> FE
-    NX --> NG
-    NG -->|REST| DJ
-    FE -->|REST/API| NG
-    US -->|gRPC UssdService| GR
-    OR -->|gRPC OracleService| GR
-    GR --> DJ
-    DJ --> PG
-    DJ --> RD
-    CL --> PG
-    CL --> RD
-    BE --> CL
-    OR --> NS
-    OR --> CH
-    OR --> OE
-    OR -->|Signed Tx| KO
-    KO --> PR
-    PR --> EV
-    EV --> MV
-    EV -->|Trigger Payout| MP
-    MP -->|SMS Notification| F1
-    DJ -->|REST Calls| OR
-    CL -->|Schedule Eval| OR
+    USSD_PHONE -->|USSD session| AT
+    WEB -->|HTTPS| NGINX
+    AT -->|POST webhook| NGINX
+    NGINX -->|/ussd/*| USSD_SVC
+    NGINX -->|/api/*| BACKEND
+    NGINX -->|/| GW
+    GW -->|proxy /api/*| BACKEND
+    GW -->|proxy /ussd/*| USSD_SVC
+    USSD_SVC <-->|gRPC UssdService| BACKEND
+    BACKEND <--> PG
+    BACKEND <--> REDIS
+    CELERY <--> REDIS
+    CELERY <--> PG
+    BACKEND -->|B2C payout| MPESA
+    BACKEND -->|SMS| SMS
+    ORACLE -->|gRPC OracleService| BACKEND
+    ORACLE -->|ethers-rs RPC| CONTRACTS
+    ORACLE -->|HTTP fetch| NASA
+    ORACLE -->|HTTP fetch| CHIRPS
+    ORACLE -->|HTTP fetch| OPENEO
+    CONTRACTS --> HARDHAT
 ```
 
 ---
 
 ## Service Topology
 
-| Service | Technology | Port | Role | Health Check URL |
-|---------|-----------|------|------|-----------------|
-| **Django Backend** | Python 3.12 / Django 4.2 | `8000` | Core REST API, business logic, policy management, gRPC server host | `GET http://localhost:8000/health/` |
-| **gRPC Server** | Django + grpcio | `50051` | Receives oracle submissions and USSD internal calls via Protobuf | `grpcurl localhost:50051 grpc.health.v1.Health/Check` |
-| **USSD Microservice** | Python 3.12 / Django 4.2 | `8001` | Handles Africa's Talking USSD sessions for `*384#` | `GET http://localhost:8001/health/` |
-| **Oracle Node** | Rust / tokio / tonic | Internal | Fetches satellite data, signs with secp256k1, submits via gRPC | Logs to stdout; Prometheus `/metrics` |
-| **API Gateway** | Node.js / TypeScript / Express | `3001` | Rate limiting, auth middleware, route aggregation | `GET http://localhost:3001/health` |
-| **Frontend** | React / Next.js 14 | `3000` | Admin dashboard, farmer portal, policy visualization | `GET http://localhost:3000/api/healthz` |
-| **PostgreSQL 16** | PostgreSQL | `5432` | Primary relational database for all service data | `pg_isready -h localhost -p 5432` |
-| **Redis 7** | Redis | `6379` | Celery broker, result backend, session cache, rate limiter | `redis-cli ping` |
-| **Celery Workers** | Python / Celery 5 | — | Async task processing: oracle polling, claim evaluation | Monitor via Flower `http://localhost:5555` |
-| **Celery Beat** | Python / Celery Beat | — | Scheduled tasks: 6-hour oracle polls, daily risk recalculation | Part of Celery process |
-| **Nginx** | Nginx 1.25 | `80/443` | Reverse proxy, SSL termination, static file serving | `GET http://localhost/health` |
-| **Smart Contracts** | Solidity 0.8.20 / Hardhat | On-chain | Policy registry, escrow, oracle verification, mitigation | Block explorer or `hardhat test` |
+| Service | Technology | Port(s) | Role | Health Check |
+|---|---|---|---|---|
+| `backend` | Python 3.12, Django 4.2, DRF | 8000 (REST), 50051 (gRPC) | Core API, policy management, claim evaluation, oracle ingestion | `GET /health/` |
+| `ussd` | Python 3.12, Django 4.2 | 8001 | Africa's Talking USSD gateway proxy; CON/END session router | `GET /health/` |
+| `oracle-node` | Rust 1.78, tokio, tonic | — (client only) | Satellite data ingestion, ECDSA signing, dual on-chain + gRPC submission | — |
+| `api-gateway` | Node.js 20, TypeScript, Express | 3001 | Rate limiting, CORS, request routing proxy to backend + ussd | `GET /health` |
+| `frontend` | React 18, Next.js 14, TypeScript | 3000 | Farmer portal, admin dashboard, wallet connection | `GET /` |
+| `celery-worker` | Python 3.12, Celery 5 | — | Async M-Pesa payouts, SMS notifications, claim processing | — |
+| `celery-beat` | Python 3.12, Celery Beat | — | Scheduled oracle evaluation, STK push polling, report generation | — |
+| `postgres` | PostgreSQL 16-alpine | 5432 | Primary relational database | `pg_isready` |
+| `redis` | Redis 7-alpine | 6379 | Celery broker (db 0), result backend (db 1), USSD sessions (db 2), cache (db 3) | `redis-cli ping` |
+| `nginx` | Nginx 1.25-alpine | 80, 443, 50051 | TLS termination, static files, gRPC passthrough, load balancing | `curl /health/` |
+| `hardhat` | Node.js 20, Hardhat | 8545 | Local EVM for development and contract testing | — |
 
 ---
 
@@ -133,267 +99,155 @@ flowchart LR
 
 ### Step-by-Step Flow
 
-1. **Farmer Registration**: Farmer dials `*384#`, USSD microservice captures national ID, phone number, farm GPS coordinates (converted to H3 cell index at resolution 9), and preferred crop type.
-2. **Policy Issuance**: Backend generates a quote based on H3 zone's historical risk score, crop type, and coverage period. Farmer confirms premium payment via M-Pesa STK Push.
-3. **On-Chain Registration**: `PolicyRegistry` smart contract records the policy with `policyId`, `h3Index` (bytes32 packed), coverage amount, and trigger thresholds.
-4. **Escrow Funding**: Premium is split — protocol fee to treasury, remainder to `EscrowVault` contract keyed by `h3Index`.
-5. **Continuous Monitoring**: Celery Beat triggers Oracle Node every 6 hours. Oracle fetches CHIRPS rainfall, NASA POWER evapotranspiration, and openEO NDVI for all active H3 cells.
-6. **Threshold Evaluation**: Oracle Node evaluates accumulated rainfall against policy thresholds (e.g., `<40mm/30days` for drought trigger). If threshold is breached, oracle prepares a signed data payload.
-7. **On-Chain Oracle Submission**: Oracle Node signs the weather data with secp256k1 private key and calls `KilimaShieldOracle.submitWeatherData()` on-chain. Contract verifies signature using `ecrecover`.
-8. **Claim Trigger**: `KilimaShieldOracle` emits `WeatherThresholdBreached` event. `MitigationVerifier` validates that no mitigation activities (irrigation records) counteract the breach.
-9. **Automated Payout**: `EscrowVault` releases funds proportional to breach severity. Smart contract calls M-Pesa Daraja B2C API via a trusted backend relay.
-10. **SMS Notification**: Africa's Talking SMS gateway sends confirmation to farmer's registered phone number with payout amount and M-Pesa transaction ID.
-11. **Audit Trail**: All events (policy creation, oracle submission, claim trigger, payout) are immutably recorded on-chain and mirrored to PostgreSQL for the admin dashboard.
-
-### Sequence Diagram
+1. **Farmer Registration** — Farmer dials `*384#` on any mobile phone → Africa's Talking USSD gateway delivers POST webhook to Nginx → routed to USSD Microservice
+2. **USSD Session** — USSD service prompts for ward code, crop type, acreage, M-Pesa number → sends `RegisterFarmer` gRPC call to Django Backend
+3. **Policy Creation** — Backend creates farmer account, computes H3 hex cell (res 9) for their GPS ward, generates premium quote, issues `PolicyRegistry.registerPolicy()` transaction, escrows ETH premium
+4. **STK Push** — Backend triggers M-Pesa Daraja STK push for premium collection; on callback → policy activated
+5. **Daily Oracle Cycle** — Oracle Node scheduler (tokio interval, 23:00 EAT) fetches NASA POWER rainfall + openEO NDVI for every monitored H3 cell
+6. **Cryptographic Signing** — Oracle computes `keccak256(h3Index, timestamp, rainfall_scaled, ndvi_scaled)`, applies EIP-191 prefix, signs with secp256k1 private key
+7. **Dual Submission** — Oracle broadcasts signed data simultaneously to: (a) Django Backend via gRPC `OracleService.SubmitData`, (b) `KilimaShieldOracle.submitData()` on-chain via ethers-rs
+8. **On-Chain Consensus** — After 3 independent oracle submissions for same H3+timestamp → contract computes median rainfall → if `medianRainfall < threshold` → `EscrowVault.payout()` triggered
+9. **M-Pesa Payout** — Django Backend receives oracle data, Celery task fires M-Pesa Daraja B2C payment → farmer receives KES within 60 seconds
+10. **SMS Confirmation** — Africa's Talking SMS sent to farmer confirming payout amount and reference
 
 ```mermaid
 sequenceDiagram
-    actor Farmer as Farmer
-    participant USSD as USSD *384#
-    participant Backend as Django Backend
-    participant Oracle as Oracle Node Rust
-    participant NASA as NASA POWER / CHIRPS
-    participant Chain as Blockchain
-    participant Escrow as EscrowVault
-    participant MPesa as M-Pesa Daraja
+    participant F as 👨‍🌾 Farmer
+    participant AT as Africa's Talking
+    participant USSD as USSD Service
+    participant BE as Django Backend
+    participant OR as Oracle Node
+    participant SC as Smart Contract
+    participant EV as EscrowVault
+    participant MP as M-Pesa Daraja
     participant SMS as SMS Gateway
 
-    Farmer->>USSD: Dial *384# - Register farm
-    USSD->>Backend: gRPC UssdService.RegisterFarmer()
-    Backend->>Backend: Validate ID, geocode GPS to H3
-    Backend-->>USSD: Registration success + policy quote
-    USSD-->>Farmer: "Your premium: KES 450/season"
+    F->>AT: Dial *384#
+    AT->>USSD: POST /ussd/gateway/
+    USSD->>BE: gRPC RegisterFarmer
+    BE->>BE: Create policy + H3 index
+    BE->>SC: registerPolicy() + depositPremium()
+    BE->>MP: STK Push (premium)
+    MP->>F: M-Pesa PIN prompt
+    F->>MP: Confirm payment
+    MP->>BE: Callback (success)
+    BE->>SC: Policy activated
 
-    Farmer->>USSD: Confirm purchase
-    USSD->>Backend: gRPC UssdService.PurchasePolicy()
-    Backend->>MPesa: STK Push premium collection
-    MPesa-->>Backend: Payment confirmed callback
-    Backend->>Chain: PolicyRegistry.registerPolicy()
-    Chain->>Escrow: Lock premium in EscrowVault
-    Chain-->>Backend: PolicyRegistered event
-    Backend-->>USSD: Policy confirmed
-    USSD-->>Farmer: "Policy ID: BG-2024-KE-0042 active"
+    Note over OR,SC: Daily at 23:00 EAT
+    OR->>OR: Fetch NASA POWER + CHIRPS + openEO
+    OR->>OR: Sign payload (secp256k1 ECDSA)
+    OR->>BE: gRPC SubmitData
+    OR->>SC: submitData() on-chain
 
-    loop Every 6 hours via Celery Beat
-        Backend->>Oracle: Trigger satellite fetch REST
-        Oracle->>NASA: GET rainfall/NDVI for H3 cells
-        NASA-->>Oracle: Climate data payload
-        Oracle->>Oracle: Evaluate thresholds + sign secp256k1
-        Oracle->>Backend: gRPC OracleService.SubmitOracleData()
-        Backend->>Backend: Store oracle reading in PostgreSQL
-        Oracle->>Chain: KilimaShieldOracle.submitWeatherData(sig)
-        Chain->>Chain: ecrecover verify oracle pubkey
-        Chain->>Chain: Evaluate policy thresholds
+    Note over SC: After 3 oracle submissions
+    SC->>SC: Compute median rainfall
+    alt medianRainfall < threshold
+        SC->>EV: payout(policyId, farmer, amount)
+        EV->>F: ETH transfer
+        BE->>MP: B2C payout (KES)
+        MP->>F: M-Pesa credit
+        BE->>SMS: Send confirmation SMS
+        SMS->>F: "BimaGrid payout KES X received"
+    else medianRainfall >= threshold
+        Note over SC: No payout — conditions not met
     end
-
-    Note over Chain: DROUGHT THRESHOLD BREACHED
-    Chain->>Chain: MitigationVerifier.verify()
-    Chain->>Escrow: Release payout EscrowVault
-    Escrow->>Backend: PayoutTriggered event webhook
-    Backend->>MPesa: B2C payout to farmer phone
-    MPesa-->>Backend: B2C result callback
-    Backend->>SMS: Send confirmation SMS
-    SMS-->>Farmer: "KES 5,200 sent. M-Pesa Ref: QWE123"
 ```
 
 ---
 
 ## gRPC Protocol Architecture
 
-### Proto File Summary (`bimagrid.proto`)
+### Proto Definition (`protos/bimagrid.proto`)
 
 ```protobuf
 syntax = "proto3";
 package bimagrid;
 
-// OracleService: Oracle Node (Rust) -> Django Backend
 service OracleService {
-  rpc SubmitOracleData (OracleDataRequest) returns (OracleDataResponse);
-  rpc GetActivePolicyCells (PolicyCellRequest) returns (PolicyCellResponse);
-  rpc ReportOracleHealth (OracleHealthRequest) returns (OracleHealthResponse);
+  rpc SubmitData (OracleDataRequest) returns (OracleDataResponse);
 }
 
-// UssdService: USSD Microservice (Django) -> Django Backend
 service UssdService {
   rpc RegisterFarmer (RegisterFarmerRequest) returns (RegisterFarmerResponse);
-  rpc PurchasePolicy (PurchasePolicyRequest) returns (PurchasePolicyResponse);
   rpc GetPolicyStatus (PolicyStatusRequest) returns (PolicyStatusResponse);
-  rpc InitiateClaim (ClaimRequest) returns (ClaimResponse);
-  rpc GetFarmerAccount (FarmerAccountRequest) returns (FarmerAccountResponse);
-}
-
-message OracleDataRequest {
-  repeated string h3_cells = 1;
-  double rainfall_mm = 2;
-  double ndvi_score = 3;
-  double evapotranspiration = 4;
-  int64 timestamp = 5;
-  bytes signature = 6;
-  string oracle_pubkey = 7;
-}
-
-message RegisterFarmerRequest {
-  string phone = 1;
-  string national_id = 2;
-  string name = 3;
-  double gps_lat = 4;
-  double gps_lng = 5;
-  string crop_type = 6;
-  double farm_area_ha = 7;
-}
-
-message PolicyStatusResponse {
-  string policy_id = 1;
-  string status = 2;
-  double premium_paid = 3;
-  double coverage_kes = 4;
-  int32 days_remaining = 5;
-  OracleDataRequest last_oracle_reading = 6;
+  rpc FileClaim (FileClaimRequest) returns (FileClaimResponse);
 }
 ```
 
-### gRPC Services & Methods
+### gRPC Service Methods
 
-| Service | Method | Direction | Description |
-|---------|--------|-----------|-------------|
-| `OracleService` | `SubmitOracleData` | Oracle → Backend | Submits signed climate observation for H3 cell batch |
-| `OracleService` | `GetActivePolicyCells` | Oracle → Backend | Retrieves list of H3 cells with active policies to monitor |
-| `OracleService` | `ReportOracleHealth` | Oracle → Backend | Heartbeat / liveness signal from oracle node |
-| `UssdService` | `RegisterFarmer` | USSD → Backend | Creates farmer account with KYC data and H3 cell |
-| `UssdService` | `PurchasePolicy` | USSD → Backend | Initiates policy purchase and M-Pesa STK Push |
-| `UssdService` | `GetPolicyStatus` | USSD → Backend | Returns active policy details for a farmer |
-| `UssdService` | `InitiateClaim` | USSD → Backend | Records manual claim initiation (supplements automated triggers) |
-| `UssdService` | `GetFarmerAccount` | USSD → Backend | Returns farmer account details for USSD session |
+| Service | Method | Caller | Target | Description |
+|---|---|---|---|---|
+| `OracleService` | `SubmitData` | Rust Oracle Node | Django Backend :50051 | Submit signed satellite observation for an H3 hex cell |
+| `UssdService` | `RegisterFarmer` | USSD Microservice | Django Backend :50051 | Register new farmer with crop, ward, acreage, M-Pesa |
+| `UssdService` | `GetPolicyStatus` | USSD Microservice | Django Backend :50051 | Query active policy and next payment date for a phone number |
+| `UssdService` | `FileClaim` | USSD Microservice | Django Backend :50051 | Initiate a manual claim lookup (parametric auto-evaluates) |
 
-### Key Message Types
+### gRPC Stubs Generation
 
-| Message | Key Fields | Description |
-|---------|-----------|-------------|
-| `OracleDataRequest` | `h3_cells[]`, `rainfall_mm`, `ndvi_score`, `evapotranspiration`, `timestamp`, `signature`, `oracle_pubkey` | Signed batch of climate readings for one or more H3 cells |
-| `OracleDataResponse` | `accepted`, `rejected_cells[]`, `reason` | Backend acknowledgment of submitted oracle data |
-| `PolicyCellRequest` | `region_filter`, `active_only` | Filter params for fetching monitored H3 cells |
-| `PolicyCellResponse` | `cells[]` (h3_index, policy_id, thresholds) | Active policy cells with trigger thresholds |
-| `RegisterFarmerRequest` | `phone`, `national_id`, `name`, `gps_lat`, `gps_lng`, `crop_type`, `farm_area_ha` | Farmer registration payload from USSD |
-| `PurchasePolicyRequest` | `farmer_id`, `h3_index`, `coverage_amount_kes`, `season_start`, `trigger_type` | Policy purchase intent |
-| `PolicyStatusResponse` | `policy_id`, `status`, `premium_paid`, `coverage_kes`, `days_remaining`, `last_oracle_reading` | Full policy status for USSD display |
-| `ClaimRequest` | `farmer_id`, `policy_id`, `incident_type`, `incident_date`, `notes` | Manual claim initiation |
+```bash
+# Regenerate Python stubs (backend + ussd)
+bash scripts/generate_grpc.sh
+
+# Run Django gRPC server (port 50051)
+python backend/manage.py run_grpc_server
+
+# Test with grpcurl
+grpcurl -plaintext localhost:50051 list
+grpcurl -plaintext -d '{"oracle_id":"oracle-1","h3_index":"8928308280fffff","timestamp":"2026-07-02T23:00:00Z","rainfall_mm":14.5,"ndvi":0.62,"soil_moisture":0.31,"data_sources":["nasa-power"],"signature":"0xdeadbeef"}' localhost:50051 bimagrid.OracleService/SubmitData
+```
 
 ---
 
 ## Smart Contract Architecture
 
-### Contract Descriptions
+### Contracts (`contracts/contracts/core/`)
 
-#### `KilimaShieldOracle.sol`
+| Contract | Role | Key Optimization |
+|---|---|---|
+| `KilimaShieldOracle` | Multi-sig oracle consensus engine; triggers payout when 3-of-N oracles agree | Packed `DataPayload` struct (1 storage slot), `calldata` sig, `unchecked` loop |
+| `PolicyRegistry` | Stores all farmer policies indexed by H3 cell | `address+bool+bool` packed in same slot, `uint128` threshold/payout |
+| `EscrowVault` | Holds premium funds; executes parametric payouts; pull-payment refunds | `nonReentrant` + pull-payment pattern; `uint128` premiums |
+| `MitigationVerifier` | Tracks verified farm interventions (drip irrigation, mulching) for premium discounts | Pure discount calculation, capped at 50% |
 
-The on-chain oracle registry and data verification contract. Accepts signed weather data payloads from authorized oracle nodes. Uses `ecrecover` to verify secp256k1 ECDSA signatures, ensuring only registered oracle public keys can submit data. Maintains a time-series mapping of `h3Index => WeatherReading[]` and emits `WeatherThresholdBreached` events when configured policy thresholds are exceeded.
+### Gas Optimizations Applied
 
-#### `PolicyRegistry.sol`
-
-Central policy ledger that records all active insurance policies as on-chain structs. Maps `policyId => Policy` where `Policy` contains farmer address, `h3Index` (bytes32), coverage amount (USDC/CELO), premium paid, trigger thresholds (rainfall floor, NDVI floor), and expiry. Inherits `AccessControl` for role-based admin operations and `Pausable` for emergency stops.
-
-#### `EscrowVault.sol`
-
-Holds premium funds in trust during the policy lifecycle. Implements a pull-over-push payment pattern — funds are authorized for release by `KilimaShieldOracle` events, then claimed by the backend relay for M-Pesa B2C disbursement. Supports multi-policy batching for gas efficiency. Emits `PayoutAuthorized(policyId, amount, farmerAddress)` events.
-
-#### `MitigationVerifier.sol`
-
-Optional verification layer that checks whether a farmer has registered mitigation activities (irrigation, supplemental watering) before authorizing a drought claim. Reads from a Merkle tree of submitted mitigation proofs, allowing farmers to dispute automated triggers. Can be toggled per-policy type.
-
-### Gas Optimization Table
-
-| Optimization | Contract | Technique | Estimated Saving |
-|-------------|----------|-----------|-----------------|
-| Batch oracle submissions | `KilimaShieldOracle` | Array input, single tx | ~60% vs individual calls |
-| Packed H3 index | All contracts | `bytes32` instead of `string` | ~20,000 gas per policy |
-| Mapping over arrays | `PolicyRegistry` | `mapping(bytes32 => Policy[])` | O(1) lookup |
-| Events over storage | `EscrowVault` | Emit events, read off-chain | ~80% storage reduction |
-| Assembly ecrecover | `KilimaShieldOracle` | Inline assembly | ~2,000 gas per verify |
-| Short-circuit checks | `MitigationVerifier` | Early revert pattern | ~5,000 gas on invalid |
-| Immutable oracle key | `KilimaShieldOracle` | `immutable` keyword | Deployment cost only |
-
-### Contract Interaction Flowchart
+| Optimization | Saving |
+|---|---|
+| `DataPayload` struct: `uint128+uint112+bool` → 1 storage slot | ~50% fewer SSTORE per oracle submission |
+| `bytes calldata signature` instead of `memory` | Eliminates 65-byte memory copy per call |
+| `unchecked { ++i }` in policy evaluation loop | ~30 gas per policy per consensus round |
+| Memory-cached storage reads for 3-oracle payloads | Replaces 6 cold SLOADs with 3 warm reads |
+| Custom errors (EIP-838) replacing `require(string)` | ~200 gas saved per revert path |
+| `Policy` struct: `address+bool+bool` packed in slot 2 | 2 fewer storage slots per policy |
+| Pull-payment refund pattern | Eliminates push-transfer re-entrancy vector |
 
 ```mermaid
 flowchart TD
-    OracleNode["Oracle Node - Rust + secp256k1"]
-    KO["KilimaShieldOracle\n.submitWeatherData(h3, data, sig)"]
-    PR["PolicyRegistry\n.getPolicy(h3Index)"]
-    MV["MitigationVerifier\n.checkMitigation(policyId)"]
-    EV["EscrowVault\n.authorizeRelease(policyId, amount)"]
-    Backend["Django Backend - Payout Relay"]
-    MPesa["M-Pesa Daraja B2C"]
-
-    OracleNode -->|"Signed tx ECDSA"| KO
-    KO -->|"ecrecover verify pubkey"| KO
-    KO -->|"Lookup active policies"| PR
-    PR -->|"Return thresholds"| KO
-    KO -->|"Threshold breached?"| MV
-    MV -->|"No mitigation found"| KO
-    KO -->|"emit WeatherThresholdBreached"| EV
-    EV -->|"emit PayoutAuthorized"| Backend
-    Backend -->|"B2C API call"| MPesa
-    MPesa -->|"KES disbursed to farmer"| Backend
+    ORACLE_NODE["Oracle Node\n(Rust)"] -->|submitData + ECDSA sig| KSO
+    KSO["KilimaShieldOracle"] -->|registerPolicy| PR
+    KSO -->|depositPremium| EV
+    KSO -->|markPaidOut| PR
+    KSO -->|payout| EV
+    PR["PolicyRegistry\ngetPoliciesByH3\ngetPolicy"] -.->|read| KSO
+    EV["EscrowVault\nhold premiums\nexecute payouts"]
+    MV["MitigationVerifier\ncalculateDiscount"] -.->|discount %| KSO
 ```
 
 ---
 
 ## Spatial Indexing
 
-### Uber H3 Resolution 9
+BimaGrid uses **Uber H3 resolution 9** hexagonal cells (~0.1 km² each) as the fundamental spatial unit for both policy registration and oracle data submission.
 
-BimaGrid uses [Uber H3](https://h3geo.org/) hexagonal hierarchical spatial indexing at **resolution 9** for all geospatial operations. At resolution 9, each H3 cell covers approximately **0.105 km²** (about 10.5 hectares), which aligns closely with the median East African smallholder farm size of 0.5–2 hectares, allowing 5–20 farms to share a single climate observation cell while maintaining precision adequate for regional weather differentiation.
+- **Policy indexing**: When a farmer registers, their ward GPS coordinates are converted to an H3 cell ID. All policies within the same H3 cell share the same oracle data window.
+- **Oracle data mapping**: Oracle nodes submit one climate reading per H3 cell per timestamp. The smart contract maps `h3Index => timestamp => oracle => DataPayload`.
+- **bytes32 packing**: H3 indices are 64-bit integers stored as big-endian 32-byte values padded to the left with zeros for Solidity `bytes32` compatibility.
 
-| H3 Resolution | Average Area | Edge Length | Typical Use |
-|--------------|-------------|-------------|-------------|
-| 7 | 5.16 km² | 1.22 km | District-level aggregation |
-| 8 | 0.74 km² | 0.46 km | Sub-location mapping |
-| **9** | **0.105 km²** | **0.174 km** | **BimaGrid policy cells** |
-| 10 | 0.015 km² | 0.066 km | Individual plot (too granular) |
-
-### bytes32 Packing
-
-H3 cell indexes at resolution 9 are 64-bit integers (8 bytes). BimaGrid packs them into Solidity `bytes32` with left-zero-padding for on-chain storage efficiency and event indexing:
-
-```solidity
-// H3 index: 0x8928308280fffff (resolution 9 cell)
-// Stored as bytes32:
-bytes32 h3CellKey = bytes32(uint256(h3Index));
-// = 0x0000000000000000000000000000000000000000000000008928308280fffff
-
-// Mapping for O(1) lookup
-mapping(bytes32 => Policy[]) public policiesByCell;
-
-// Indexed events for efficient log filtering
-event PolicyCreated(bytes32 indexed h3Index, uint256 policyId, address farmer);
-event WeatherThresholdBreached(bytes32 indexed h3Index, uint256 rainfallMm, uint256 timestamp);
-```
-
-### Oracle Data to Policy Mapping
-
-```
-GPS Coordinates (farmer registration)
-        |
-        v
-H3 lat/lng to cell (resolution 9)
-   e.g., (0.0236 S, 37.9062 E) -> 8928308280fffff
-        |
-        v
-bytes32 packed index
-   0x0000000000000000000000000000000000000000000000008928308280fffff
-        |
-        |---> PolicyRegistry.policiesByCell[]   All active policies in this cell
-        |---> EscrowVault.escrowByCell          Pooled premium balance
-        +---> KilimaShieldOracle.readings[]     Time-series weather data
-
-Oracle Node (every 6h):
-  Fetch CHIRPS/NASA POWER for H3 centroid
-  -> Evaluate thresholds
-  -> Sign with secp256k1
-  -> submitWeatherData()
-  -> KilimaShieldOracle maps h3Index to all policies
-  -> Evaluates each threshold individually
+```python
+import h3
+cell = h3.latlng_to_cell(-1.286389, 36.817223, 9)  # Nairobi CBD → "8928308280fffff"
+h3_bytes32 = bytes.fromhex(cell.zfill(64))          # left-pad to 32 bytes
 ```
 
 ---
@@ -401,163 +255,77 @@ Oracle Node (every 6h):
 ## Security Architecture
 
 | Layer | Mechanism | Details |
-|-------|-----------|---------|
-| **Transport** | TLS 1.3 | All external traffic via Nginx with Let's Encrypt certificates; gRPC channels use mTLS between Oracle Node and Backend |
-| **API Authentication** | JWT Bearer Tokens | HS256-signed JWTs with 15-minute access tokens and 7-day refresh tokens; issued by Django SimpleJWT |
-| **Oracle Authentication** | secp256k1 ECDSA | Oracle Node signs each weather data payload; `KilimaShieldOracle` verifies on-chain via `ecrecover`; oracle pubkey is whitelisted at contract deployment |
-| **Smart Contract Access** | OpenZeppelin AccessControl | Role-based: `ORACLE_ROLE`, `ADMIN_ROLE`, `PAUSER_ROLE`; multi-sig (3-of-5) required for admin operations |
-| **Contract Emergency Stop** | OpenZeppelin Pausable | `pause()` halts all payout operations; requires `PAUSER_ROLE`; circuit breaker for oracle manipulation |
-| **USSD Session** | Session tokens + phone verification | Africa's Talking session IDs bound to phone numbers; one active session per phone; PIN required for financial operations |
-| **Database** | Row-level encryption + TLS | Sensitive fields (national ID, bank details) encrypted at rest with AES-256; PostgreSQL connections require TLS |
-| **Rate Limiting** | Redis token bucket | API Gateway enforces: 100 req/min per IP for public, 1000 req/min per authenticated user |
-| **Input Validation** | Django serializers + Pydantic | All REST inputs validated by DRF serializers; gRPC inputs validated by Pydantic models before processing |
-| **Oracle Node Key Management** | Environment secrets + HSM-ready | Oracle private key loaded from environment variable or HashiCorp Vault; never logged; key rotation procedure documented |
-| **Dependency Security** | Automated scanning | Dependabot for Python/JS/Rust; `cargo audit`, `pip-audit`, `npm audit` in CI pipeline |
-| **CORS** | Strict origin whitelist | Django CORS configured to allow only registered frontend domains; credentials mode enabled only for authenticated routes |
+|---|---|---|
+| Oracle Authentication | secp256k1 ECDSA (EIP-191) | Oracles sign `keccak256(h3, ts, rainfall, ndvi)` with private key; contract recovers signer and checks whitelist |
+| Oracle→Backend gRPC | `X-Oracle-Signature` header | Hex-encoded 65-byte ECDSA signature attached to every gRPC call; backend optionally verifies |
+| USSD→Backend gRPC | `X-USSD-Internal-Key` header | Shared secret API key for internal service channel (set via `BACKEND_API_KEY` env var) |
+| REST API | JWT Bearer tokens (DRF SimpleJWT) | 60-min access token, 7-day refresh; standard `Authorization: Bearer <token>` header |
+| Smart Contracts | `Ownable` + `ReentrancyGuard` | All state-mutating oracle functions require on-chain whitelist; payout uses `nonReentrant` guard |
+| Smart Contract Errors | Custom errors (EIP-838) | 4-byte selectors replace string reverts; reduces attack surface and gas cost |
+| Rate Limiting | express-rate-limit (120 req/min) | Enforced at API Gateway level; USSD endpoint allows 300 req/min for telco callback volume |
+| TLS | Nginx SSL termination | All external traffic over HTTPS; internal Docker network uses plain HTTP |
+| Non-root containers | uid 1001–1005 per service | All Docker images create and switch to dedicated non-root users |
 
 ---
 
 ## Technology Stack Reference
 
 | Layer | Technology | Version | Purpose |
-|-------|-----------|---------|---------|
-| **Core Backend** | Python | 3.12 | Runtime for Django and Celery services |
-| **Core Backend** | Django | 4.2 LTS | Web framework, ORM, admin panel |
-| **Core Backend** | Django REST Framework | 3.15 | REST API serializers, viewsets, routers |
-| **Core Backend** | grpcio | 1.63 | gRPC server and client stubs |
-| **Core Backend** | grpcio-tools | 1.63 | Protobuf compilation to Python |
-| **Core Backend** | Django SimpleJWT | 5.3 | JWT authentication |
-| **Core Backend** | Celery | 5.4 | Distributed task queue |
-| **Core Backend** | django-celery-beat | 2.6 | Database-backed periodic tasks |
-| **USSD Service** | Africa's Talking SDK | 1.2 | USSD session handling and SMS |
-| **Oracle Node** | Rust | 1.78 stable | Systems language for oracle node |
-| **Oracle Node** | tokio | 1.37 | Async runtime for Rust |
-| **Oracle Node** | tonic | 0.11 | gRPC framework for Rust |
-| **Oracle Node** | rust-secp256k1 | 0.29 | ECDSA signing of oracle data |
-| **Oracle Node** | reqwest | 0.12 | Async HTTP client for satellite APIs |
-| **Oracle Node** | serde / serde_json | 1.0 | Serialization / deserialization |
-| **Smart Contracts** | Solidity | 0.8.20 | Smart contract language |
-| **Smart Contracts** | Hardhat | 2.22 | Development environment and testing |
-| **Smart Contracts** | OpenZeppelin Contracts | 5.0 | AccessControl, Pausable, ReentrancyGuard |
-| **Smart Contracts** | ethers.js | 6.x | Contract interaction in tests/scripts |
-| **Frontend** | React | 18.3 | UI component library |
-| **Frontend** | Next.js | 14.2 | SSR framework with App Router |
-| **Frontend** | TypeScript | 5.4 | Type safety |
-| **Frontend** | Mapbox GL JS | 3.4 | H3 cell visualization on maps |
-| **API Gateway** | Node.js | 20 LTS | Gateway runtime |
-| **API Gateway** | TypeScript | 5.4 | Type safety |
-| **API Gateway** | Express | 4.19 | HTTP framework |
-| **API Gateway** | express-rate-limit | 7.x | Rate limiting middleware |
-| **Database** | PostgreSQL | 16 | Primary relational database |
-| **Database** | psycopg2 | 2.9 | Python PostgreSQL adapter |
-| **Cache / Queue** | Redis | 7.2 | Celery broker, cache, rate limiter |
-| **Infrastructure** | Docker | 26 | Containerization |
-| **Infrastructure** | Docker Compose | 2.27 | Local multi-service orchestration |
-| **Infrastructure** | Nginx | 1.25 | Reverse proxy, SSL, load balancing |
-| **Payments** | M-Pesa Daraja API | v2 | STK Push (collection) + B2C (payouts) |
-| **Satellite Data** | NASA POWER API | v2.5 | Solar radiation, temperature, humidity |
-| **Satellite Data** | CHIRPS | v2.0 | Rainfall data (0.05 degree resolution) |
-| **Satellite Data** | openEO | 1.2 | NDVI and multispectral band processing |
-| **Spatial** | Uber H3 (h3-py) | 3.7 | Hexagonal spatial indexing |
+|---|---|---|---|
+| Smart Contracts | Solidity | 0.8.20 | Parametric insurance logic, EscrowVault, Oracle consensus |
+| Contract Tooling | Hardhat + ethers.js | 2.19 + v6 | Compilation, testing, deployment, gas reporting |
+| Contract Libraries | OpenZeppelin | 5.x | `Ownable`, `ReentrancyGuard` |
+| Oracle Runtime | Rust + tokio | 1.78 + 1.28 | Async Oracle Node daemon |
+| Oracle gRPC Client | tonic + prost | 0.9 + 0.11 | Type-safe gRPC client for OracleService |
+| Oracle Crypto | ethers-rs + k256 | 2.0 | secp256k1 signing, EIP-191 message hashing |
+| Backend Framework | Django + DRF | 4.2 + 3.14 | Core REST API, ORM, admin |
+| Backend gRPC | grpcio + grpcio-tools | 1.62+ | OracleService + UssdService server |
+| Task Queue | Celery + Redis | 5.x + 7 | Async M-Pesa payouts, scheduled evaluation |
+| USSD Framework | Django | 4.2 | Standalone USSD session router |
+| USSD HTTP Client | httpx | 0.27 | Async HTTP calls from USSD to Backend (fallback REST) |
+| API Gateway | Express + TypeScript | 4.18 + 5.3 | Rate limiting, CORS, reverse proxy |
+| Frontend | Next.js + React | 14 + 18 | Farmer portal, admin dashboard |
+| Database | PostgreSQL | 16 | Primary relational store |
+| Cache / Broker | Redis | 7 | Celery, sessions, cache |
+| Proxy | Nginx | 1.25 | TLS, routing, gRPC passthrough |
+| Spatial Index | Uber H3 | 4.3+ | Hexagonal grid for policies and oracle data |
+| Satellite (NDVI) | openEO | Cloud | EVI/NDVI computation via ESA Earth Engine |
+| Satellite (Rain) | NASA POWER | Public API | Daily rainfall, temperature by coordinates |
+| Satellite (Precip) | CHIRPS | Public API | High-resolution precipitation data |
+| Payments | M-Pesa Daraja | B2C v1 | KES payouts to farmer M-Pesa wallets |
+| SMS / USSD | Africa's Talking | v1 | USSD sessions + SMS notifications |
+| Identity | IPRS | v1 | Kenya National ID verification |
+| Land Registry | ArdhiSasa | v1 | Kenya land parcel verification |
+| DevOps | Docker + Compose | 27+ | Container orchestration |
+| CI/CD | GitHub Actions | — | Automated test + build pipeline |
+| Protocols | gRPC / HTTP/2 | — | Oracle→Backend, USSD→Backend |
 
 ---
 
 ## Infrastructure & Deployment
 
-### Docker Compose Services
+### Docker Services (Root `docker-compose.yml`)
 
-```yaml
-# Key services in docker-compose.yml
-services:
-  postgres:
-    image: postgres:16-alpine
-    ports: ["5432:5432"]
-    environment:
-      POSTGRES_DB: bimagrid
-      POSTGRES_USER: bimagrid_user
-
-  redis:
-    image: redis:7-alpine
-    ports: ["6379:6379"]
-
-  backend:
-    build: ./backend
-    ports: ["8000:8000", "50051:50051"]
-    depends_on: [postgres, redis]
-
-  ussd:
-    build: ./ussd
-    ports: ["8001:8001"]
-    depends_on: [postgres, redis, backend]
-
-  oracle:
-    build: ./oracle-node
-    # internal only, connects via gRPC to backend:50051
-    depends_on: [backend]
-
-  gateway:
-    build: ./gateway
-    ports: ["3001:3001"]
-    depends_on: [backend]
-
-  frontend:
-    build: ./frontend
-    ports: ["3000:3000"]
-
-  celery:
-    build: ./backend
-    command: celery -A bimagrid worker --loglevel=info
-    depends_on: [postgres, redis]
-
-  celerybeat:
-    build: ./backend
-    command: celery -A bimagrid beat --loglevel=info
-    depends_on: [postgres, redis]
-
-  nginx:
-    image: nginx:1.25-alpine
-    ports: ["80:80", "443:443"]
-    depends_on: [frontend, backend, gateway]
-
-  flower:
-    build: ./backend
-    command: celery -A bimagrid flower
-    ports: ["5555:5555"]
+```bash
+docker compose up -d          # Start all 11 services
+docker compose logs -f backend # Stream backend logs
+docker compose exec backend python manage.py shell
 ```
 
 ### Nginx Routing Table
 
-| Path Pattern | Upstream | Notes |
-|-------------|----------|-------|
-| `/` | `frontend:3000` | Next.js SSR pages |
-| `/api/v1/` | `gateway:3001` | All REST API calls via gateway |
-| `/admin/` | `backend:8000` | Django admin panel (IP-restricted) |
-| `/ussd/` | `ussd:8001` | Africa's Talking webhook endpoint |
-| `/health` | `backend:8000` | Load balancer health probe |
-| `/static/` | Static files | Nginx serves directly from volume |
-| `/media/` | Static files | Uploaded documents |
-| `/flower/` | `flower:5555` | Celery monitoring (VPN only) |
+| External Path | Upstream | Notes |
+|---|---|---|
+| `GET/POST /api/*` | `backend:8000` | Django REST API |
+| `POST /ussd/gateway/` | `ussd:8001` | Africa's Talking USSD webhook |
+| `GET/POST /` | `api-gateway:3001` | React frontend + gateway |
+| `*:50051` | `backend:50051` | gRPC passthrough (HTTP/2) |
+| `GET /health/` | nginx itself | Returns 200 OK |
 
 ### Environment Tiers
 
-| Tier | Description | Blockchain Network | Oracle Mode |
-|------|-------------|-------------------|-------------|
-| **Development** | Local Docker Compose | Hardhat local node (chainId: 31337) | Mock satellite data |
-| **Staging** | GCP Cloud Run + Cloud SQL | Alfajores testnet (Celo) | Real satellite APIs |
-| **Production** | GCP GKE + Cloud SQL HA | Celo Mainnet | Real satellite APIs + HSM key |
-
-### Production Infrastructure (GCP)
-
-```
-GCP Project: bimagrid-prod
-├── GKE Cluster (3 nodes, e2-standard-4)
-│   ├── Namespace: bimagrid-backend
-│   ├── Namespace: bimagrid-oracle
-│   └── Namespace: bimagrid-frontend
-├── Cloud SQL: PostgreSQL 16 (HA, 2 replicas)
-├── Memorystore: Redis 7 (1GB)
-├── Cloud Load Balancer -> GKE Ingress (Nginx)
-├── Cloud Armor: DDoS protection + WAF rules
-├── Secret Manager: DB passwords, JWT secrets, oracle private keys
-└── Cloud Monitoring + Alerting
-```
+| Tier | Config | Database | Blockchain |
+|---|---|---|---|
+| Development | `DEBUG=True`, mock integrations | SQLite or local Postgres | Hardhat local node |
+| Staging | `DEBUG=False`, sandbox APIs | Postgres (Docker) | Testnet (Mumbai/Sepolia) |
+| Production | `DEBUG=False`, live APIs | Managed Postgres + replicas | Polygon/Ethereum mainnet |

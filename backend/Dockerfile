@@ -40,13 +40,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DJANGO_SETTINGS_MODULE=config.settings.base
 
-WORKDIR /app/backend
-COPY backend/ .
-
 # Create a non-root system user and fix ownership
 RUN useradd -r -u 1001 -s /bin/false bimagrid \
-    && mkdir -p /app/static /app/media \
+    && mkdir -p /app/static /app/media /app/backend \
     && chown -R bimagrid:bimagrid /app
+
+WORKDIR /app/backend
+COPY --chown=bimagrid:bimagrid backend/ .
 
 USER bimagrid
 

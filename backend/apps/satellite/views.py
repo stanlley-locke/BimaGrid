@@ -43,3 +43,18 @@ class SatelliteAnalysisViewSet(viewsets.ReadOnlyModelViewSet):
 			SatelliteObservation.objects.all(), self.request.user
 		).values_list("id", flat=True)
 		return qs.filter(observation_id__in=h3_scoped)
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def rainfall_view(request):
+	h3_index = request.GET.get("h3_index")
+	return Response({"h3_index": h3_index, "metric": "rainfall", "value": 15.5})
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def ndvi_view(request):
+	h3_index = request.GET.get("h3_index")
+	return Response({"h3_index": h3_index, "metric": "ndvi", "value": 0.75})

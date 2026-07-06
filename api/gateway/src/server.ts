@@ -3,7 +3,7 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
-import { createProxyMiddleware } from 'http-proxy-middleware';
+import { createProxyMiddleware, fixRequestBody } from 'http-proxy-middleware';
 import rateLimit from 'express-rate-limit';
 import { logger, morganStream } from './middleware/logger';
 
@@ -12,14 +12,7 @@ const PORT = parseInt(process.env.PORT ?? '3001', 10);
 const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:8000';
 const USSD_URL = process.env.USSD_URL ?? 'http://localhost:8001';
 
-// Security & parsing
-app.use(helmet());
-app.use(cors({ origin: (process.env.CORS_ORIGINS ?? '*').split(','), credentials: true }));
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
-app.use(morgan('combined', { stream: morganStream }));
-
-// Rate limiting
+// Rate limiting MUST happen before anything else so it applies globally (except health might be excluded, but fine here)
 const limiter = rateLimit({
   windowMs: 60_000,
   max: parseInt(process.env.RATE_LIMIT_MAX ?? '120', 10),
@@ -44,11 +37,12 @@ app.get('/health', (_req, res) => {
 app.use('/api', createProxyMiddleware({
   target: BACKEND_URL,
   changeOrigin: true,
-  on: {
-    error: (err, _req, res) => {
-      logger.error('Backend proxy error:', err);
-      (res as express.Response).status(502).json({ error: 'Bad Gateway', message: 'Backend service unavailable' });
-    },
+  onProxyReq: fixRequestBody,
+  onError: (err: any, _req: any, res: any) => {
+    logger.error('Backend proxy error:', err);
+    if (!res.headersSent) {
+      res.status(502).json({ error: 'Bad Gateway', message: 'Backend service unavailable' });
+    }
   },
 }));
 
@@ -56,13 +50,21 @@ app.use('/api', createProxyMiddleware({
 app.use('/ussd', createProxyMiddleware({
   target: USSD_URL,
   changeOrigin: true,
-  on: {
-    error: (err, _req, res) => {
-      logger.error('USSD proxy error:', err);
-      (res as express.Response).status(502).json({ error: 'Bad Gateway', message: 'USSD service unavailable' });
-    },
+  onProxyReq: fixRequestBody,
+  onError: (err: any, _req: any, res: any) => {
+    logger.error('USSD proxy error:', err);
+    if (!res.headersSent) {
+      res.status(502).json({ error: 'Bad Gateway', message: 'USSD service unavailable' });
+    }
   },
 }));
+
+// Security & parsing for other potential future routes
+app.use(helmet());
+app.use(cors({ origin: (process.env.CORS_ORIGINS ?? '*').split(','), credentials: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+app.use(morgan('combined', { stream: morganStream }));
 
 // 404 handler
 app.use((_req, res) => {

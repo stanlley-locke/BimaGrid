@@ -28,6 +28,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     id: "oracle-1".to_string(),
                     data_sources: vec!["open-meteo".to_string()],
                     signing_key: "0x47e175b104810481048104810481048104810481048104810481048104810481".to_string(),
+                    backend_url: Some("http://localhost:50051".to_string()),
                 },
                 blockchain: config::BlockchainConfig {
                     rpc_url: "http://localhost:8545".to_string(),

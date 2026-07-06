@@ -106,6 +106,9 @@ services:
   oracle-node:
     <<: *restart-policy
     logging: *default-logging
+    depends_on:
+      hardhat:
+        required: false
     environment:
       BACKEND_GRPC_URL: http://backend:50051
       BLOCKCHAIN_RPC_URL: ${BLOCKCHAIN_RPC_URL}   # Point to real network in prod

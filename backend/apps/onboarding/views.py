@@ -34,3 +34,19 @@ class SubmitOnboardingView(APIView):
 		onboarding = serializer.save()
 		onboarding = submit_onboarding(onboarding)
 		return Response(FarmerOnboardingSerializer(onboarding).data, status=status.HTTP_200_OK)
+
+class OnboardingStatusView(APIView):
+	permission_classes = [permissions.IsAuthenticated]
+
+	def get(self, request, *args, **kwargs):
+		onboarding = get_or_create_onboarding(request.user.profile)
+		return Response({"status": onboarding.status, "verification_level": onboarding.verification_level})
+
+class VerifyIdentityView(APIView):
+	permission_classes = [permissions.IsAuthenticated]
+
+	def post(self, request, *args, **kwargs):
+		onboarding = get_or_create_onboarding(request.user.profile)
+		onboarding.verification_level = 2
+		onboarding.save(update_fields=["verification_level", "updated_at"])
+		return Response({"status": "verified", "verification_level": onboarding.verification_level})

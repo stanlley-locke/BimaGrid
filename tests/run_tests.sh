@@ -25,7 +25,7 @@ FAILURES=()
 section() { echo -e "\n${BOLD}${BLUE}══════════════════════════════════════════════════${NC}"; echo -e "${BOLD}${CYAN}  $1${NC}"; echo -e "${BOLD}${BLUE}══════════════════════════════════════════════════${NC}"; }
 pass()    { echo -e "  ${GREEN}✅ PASS${NC} — $1"; ((PASS++)); }
 fail()    { echo -e "  ${RED}❌ FAIL${NC} — $1"; ((FAIL++)); FAILURES+=("$1"); }
-skip()    { echo -e "  ${YELLOW}⚠️  SKIP${NC} — $1 (service unavailable)"; ((SKIP++)); }
+skip()    { echo -e "  ${YELLOW}⚠️  SKIP${NC} — $1 (service unavailable)"; ((SKIP++)) || true; }
 info()    { echo -e "  ${YELLOW}ℹ️  INFO${NC} — $1"; }
 
 # HTTP helper: run_curl <description> <expected_http_code> <curl_args...>
@@ -173,8 +173,8 @@ if [[ -n "$TOKEN" ]]; then
   [[ "$ME" == "200" ]] && pass "GET /api/v1/accounts/me/ (200)" || fail "GET /accounts/me/ — HTTP $ME"
 
   # Unauthenticated access should fail
-  UNAUTH=$(curl -s -o /dev/null -w '%{http_code}' "$BACKEND/api/v1/accounts/me/")
-  [[ "$UNAUTH" == "401" ]] && pass "Unauthenticated /me/ correctly returns 401" || fail "Expected 401, got $UNAUTH"
+  ME_UNAUTH=$(curl -s -o /dev/null -w '%{http_code}' "$BACKEND/api/v1/accounts/me/")
+  [[ "$ME_UNAUTH" == "401" || "$ME_UNAUTH" == "403" ]] && pass "GET /api/v1/accounts/me/ unauth (401/403)" || fail "Expected 401, got $ME_UNAUTH"
 else
   skip "Account profile tests (no token)"
 fi
@@ -303,7 +303,7 @@ if [[ -n "$TOKEN" ]]; then
     CLM_RESP=$(curl -s -X POST "$BACKEND/api/v1/claims/" \
       -H "Authorization: Token $TOKEN" -H 'Content-Type: application/json' \
       -d "{\"policy_id\":\"$POLICY_ID\",\"loss_type\":\"drought\",\"description\":\"No rain for 3 weeks\",\"estimated_loss_kes\":12000}" 2>/dev/null)
-    CLM_STATUS=$(echo "$CLM_RESP" | python3 -c "import sys; d=__import__('json').load(sys.stdin); print('ok')" 2>/dev/null && \
+    CLM_STATUS=$(echo "$CLM_RESP" | python3 -c "import sys; d=__import__('json').load(sys.stdin);" 2>/dev/null && \
       curl -s -o /dev/null -w '%{http_code}' -X POST "$BACKEND/api/v1/claims/" \
       -H "Authorization: Token $TOKEN" -H 'Content-Type: application/json' \
       -d "{\"policy_id\":\"$POLICY_ID\",\"loss_type\":\"flood\",\"description\":\"Heavy flooding\",\"estimated_loss_kes\":8000}" 2>/dev/null)

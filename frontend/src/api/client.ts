@@ -18,7 +18,7 @@ import type {
 const TOKEN_KEY = 'bimagrid_auth_token';
 
 export const API_BASE_URL =
-  import.meta.env.VITE_API_URL?.replace(/\/$/, '') || 'http://localhost:8000/api';
+  import.meta.env.VITE_API_URL?.replace(/\/$/, '') || '/api';
 
 export function getStoredToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
@@ -173,7 +173,7 @@ export const dashboardApi = {
   },
 
   async getPayouts(): Promise<Payout[]> {
-    const data = await apiRequest<Payout[] | PaginatedResponse<Payout>>('/payouts/');
+    const data = await apiRequest<Payout[] | PaginatedResponse<Payout>>('/payments/payouts/');
     return normalizeList(data);
   },
 

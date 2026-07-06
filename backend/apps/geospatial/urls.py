@@ -9,7 +9,7 @@ from .geography_views import (
 	SubCountyConstituencyListView,
 	WardListView,
 )
-from .views import ParcelGeometryViewSet
+from .views import ParcelGeometryViewSet, h3_index_view
 
 
 router = DefaultRouter()
@@ -28,4 +28,5 @@ urlpatterns = [
 		name="geography-subcounty-constituencies",
 	),
 	path("geography/wards/", WardListView.as_view(), name="geography-wards"),
+	path("geospatial/h3-index/", h3_index_view, name="geospatial-h3-index"),
 ] + router.urls
