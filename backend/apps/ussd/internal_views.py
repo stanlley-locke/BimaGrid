@@ -38,6 +38,7 @@ class UssdInternalRegisterView(APIView):
 
 		phone = normalize_phone(str(request.data.get("phone", "")))
 		ward_code = str(request.data.get("ward_code", "")).strip()
+		ward_id = str(request.data.get("ward_id", "")).strip()
 		crop = str(request.data.get("crop", "")).strip()
 		mpesa_number = normalize_phone(str(request.data.get("mpesa_number", phone)))
 
@@ -48,21 +49,37 @@ class UssdInternalRegisterView(APIView):
 		except (InvalidOperation, ValueError):
 			return Response({"error": "Invalid acreage"}, status=status.HTTP_400_BAD_REQUEST)
 
-		if len(ward_code) != 4 or not ward_code.isdigit():
+		from apps.geospatial.models import Ward
+
+		ward = None
+		if ward_id:
+			ward = Ward.objects.filter(id=ward_id).first()
+			if not ward:
+				return Response({"error": "Invalid ward_id"}, status=status.HTTP_400_BAD_REQUEST)
+			ward_code = ward.ward_code
+		elif len(ward_code) != 4 or not ward_code.isdigit():
 			return Response({"error": "Invalid ward code"}, status=status.HTTP_400_BAD_REQUEST)
+		else:
+			ward = Ward.objects.filter(external_id=int(ward_code)).first()
+
 		if crop not in CropChoice.values:
 			return Response({"error": "Invalid crop"}, status=status.HTTP_400_BAD_REQUEST)
 
 		profile = get_or_create_farmer_profile(phone)
 		onboarding = get_or_create_onboarding(profile)
+		onboarding.ward = ward
 		onboarding.ward_code = ward_code
 		onboarding.crop = crop
 		onboarding.acreage = acreage
 		onboarding.mpesa_number = mpesa_number
 		onboarding.save(
-			update_fields=["ward_code", "crop", "acreage", "mpesa_number", "updated_at"]
+			update_fields=["ward", "ward_code", "crop", "acreage", "mpesa_number", "updated_at"]
 		)
 		submit_onboarding(onboarding)
+		if ward:
+			from apps.geospatial.tasks import profile_ward_area
+
+			profile_ward_area.delay(str(ward.id))
 
 		return Response(
 			{

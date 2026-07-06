@@ -175,7 +175,10 @@ AFRICASTALKING_USE_MOCK = env.bool("AFRICASTALKING_USE_MOCK", default=not bool(A
 # Standalone USSD service (optional proxy target)
 USSD_SERVICE_URL = env("USSD_SERVICE_URL", default="")
 USSD_SERVICE_TIMEOUT = env.float("USSD_SERVICE_TIMEOUT", default=10.0)
-USSD_INTERNAL_API_KEY = env("USSD_INTERNAL_API_KEY", default="bimagrid-ussd-internal-dev-key")
+USSD_INTERNAL_API_KEY = env(
+	"BACKEND_API_KEY",
+	default=env("USSD_INTERNAL_API_KEY", default="bimagrid-ussd-internal-dev-key"),
+)
 
 OPENEO_BACKEND_URL = env("OPENEO_BACKEND_URL", default="https://earthengine.openeo.org")
 OPENEO_USERNAME = env("OPENEO_USERNAME", default="")

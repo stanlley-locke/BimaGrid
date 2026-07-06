@@ -51,7 +51,10 @@ AFRICASTALKING_VERIFY_SIGNATURE = env.bool("AFRICASTALKING_VERIFY_SIGNATURE", de
 
 # Backend integration
 BACKEND_URL = env("BACKEND_URL", default="http://localhost:8000").rstrip("/")
-BACKEND_API_KEY = env("USSD_INTERNAL_API_KEY", default="bimagrid-ussd-internal-dev-key")
+BACKEND_API_KEY = env(
+	"BACKEND_API_KEY",
+	default=env("USSD_INTERNAL_API_KEY", default="bimagrid-ussd-internal-dev-key"),
+)
 BACKEND_TIMEOUT_SECONDS = env.float("BACKEND_TIMEOUT_SECONDS", default=10.0)
 
 # Session state
