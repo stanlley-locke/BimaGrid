@@ -1,8 +1,45 @@
 {
   "_format": "hh-sol-cache-2",
   "files": {
-    "/workspaces/BimaGrid/contracts/contracts/core/EscrowVault.sol": {
-      "lastModificationDate": 1782975257918,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\contracts\\core\\BimaGridPolicy.sol": {
+      "lastModificationDate": 1783596719588,
+      "contentHash": "3c3e2c2985294e35cf2e708528aaafa2",
+      "sourceName": "contracts/core/BimaGridPolicy.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "BimaGridPolicy"
+      ]
+    },
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\contracts\\core\\EscrowVault.sol": {
+      "lastModificationDate": 1783004185613,
       "contentHash": "c8ccf8fa9bafb546ceee0b4b61e2f79a",
       "sourceName": "contracts/core/EscrowVault.sol",
       "solcConfig": {
@@ -41,8 +78,45 @@
         "EscrowVault"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/access/Ownable.sol": {
-      "lastModificationDate": 1782970048175,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\security\\ReentrancyGuard.sol": {
+      "lastModificationDate": 1783538795692,
+      "contentHash": "1535f8c0c68463f8c1b5239f7584e71f",
+      "sourceName": "@openzeppelin/contracts/security/ReentrancyGuard.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "ReentrancyGuard"
+      ]
+    },
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\access\\Ownable.sol": {
+      "lastModificationDate": 1783538794149,
       "contentHash": "5a20b2cad87ddb61c7a3a6af21289e28",
       "sourceName": "@openzeppelin/contracts/access/Ownable.sol",
       "solcConfig": {
@@ -80,45 +154,8 @@
         "Ownable"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/security/ReentrancyGuard.sol": {
-      "lastModificationDate": 1782970048219,
-      "contentHash": "1535f8c0c68463f8c1b5239f7584e71f",
-      "sourceName": "@openzeppelin/contracts/security/ReentrancyGuard.sol",
-      "solcConfig": {
-        "version": "0.8.20",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "viaIR": true,
-          "evmVersion": "paris",
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        "^0.8.0"
-      ],
-      "artifacts": [
-        "ReentrancyGuard"
-      ]
-    },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/utils/Context.sol": {
-      "lastModificationDate": 1782970044890,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\utils\\Context.sol": {
+      "lastModificationDate": 1783538751702,
       "contentHash": "f07feb4a44b1a4872370da5aa70e8e46",
       "sourceName": "@openzeppelin/contracts/utils/Context.sol",
       "solcConfig": {
@@ -154,8 +191,8 @@
         "Context"
       ]
     },
-    "/workspaces/BimaGrid/contracts/contracts/core/KilimaShieldOracle.sol": {
-      "lastModificationDate": 1782975289933,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\contracts\\core\\KilimaShieldOracle.sol": {
+      "lastModificationDate": 1783004185617,
       "contentHash": "ab46ef7faa23a6b60b89f8dedea24239",
       "sourceName": "contracts/core/KilimaShieldOracle.sol",
       "solcConfig": {
@@ -197,8 +234,8 @@
         "KilimaShieldOracle"
       ]
     },
-    "/workspaces/BimaGrid/contracts/contracts/libraries/ECDSA.sol": {
-      "lastModificationDate": 1782972142527,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\contracts\\libraries\\ECDSA.sol": {
+      "lastModificationDate": 1783004185642,
       "contentHash": "a73792134634866edc3de28734177d3f",
       "sourceName": "contracts/libraries/ECDSA.sol",
       "solcConfig": {
@@ -234,8 +271,8 @@
         "ECDSA"
       ]
     },
-    "/workspaces/BimaGrid/contracts/contracts/libraries/H3.sol": {
-      "lastModificationDate": 1782972150480,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\contracts\\libraries\\H3.sol": {
+      "lastModificationDate": 1783004185644,
       "contentHash": "5cf81fa13530d42eb855c7b8e216d5d0",
       "sourceName": "contracts/libraries/H3.sol",
       "solcConfig": {
@@ -271,8 +308,8 @@
         "H3"
       ]
     },
-    "/workspaces/BimaGrid/contracts/contracts/core/PolicyRegistry.sol": {
-      "lastModificationDate": 1782975257520,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\contracts\\core\\PolicyRegistry.sol": {
+      "lastModificationDate": 1783004185625,
       "contentHash": "f00e3ea68c508b06bbc6873129a55a81",
       "sourceName": "contracts/core/PolicyRegistry.sol",
       "solcConfig": {
@@ -310,8 +347,8 @@
         "PolicyRegistry"
       ]
     },
-    "/workspaces/BimaGrid/contracts/contracts/mocks/MockOracle.sol": {
-      "lastModificationDate": 1782972199365,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\contracts\\mocks\\MockOracle.sol": {
+      "lastModificationDate": 1783004185650,
       "contentHash": "796c17a6b152ea4c24e560da422342e7",
       "sourceName": "contracts/mocks/MockOracle.sol",
       "solcConfig": {
@@ -349,8 +386,8 @@
         "MockOracle"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/token/ERC721/ERC721.sol": {
-      "lastModificationDate": 1782970046374,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\token\\ERC721\\ERC721.sol": {
+      "lastModificationDate": 1783538772618,
       "contentHash": "95602b04f0b53f1139f4668d123ddeb7",
       "sourceName": "@openzeppelin/contracts/token/ERC721/ERC721.sol",
       "solcConfig": {
@@ -394,45 +431,8 @@
         "ERC721"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/utils/Address.sol": {
-      "lastModificationDate": 1782970044836,
-      "contentHash": "211ffd288c1588ba8c10eae668ca3c66",
-      "sourceName": "@openzeppelin/contracts/utils/Address.sol",
-      "solcConfig": {
-        "version": "0.8.20",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "viaIR": true,
-          "evmVersion": "paris",
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        "^0.8.1"
-      ],
-      "artifacts": [
-        "Address"
-      ]
-    },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/utils/Strings.sol": {
-      "lastModificationDate": 1782970048359,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\utils\\Strings.sol": {
+      "lastModificationDate": 1783538797099,
       "contentHash": "48686fc32a22a3754b8e63321857dd2a",
       "sourceName": "@openzeppelin/contracts/utils/Strings.sol",
       "solcConfig": {
@@ -471,8 +471,45 @@
         "Strings"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/utils/introspection/ERC165.sol": {
-      "lastModificationDate": 1782970045518,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\utils\\Address.sol": {
+      "lastModificationDate": 1783538747502,
+      "contentHash": "211ffd288c1588ba8c10eae668ca3c66",
+      "sourceName": "@openzeppelin/contracts/utils/Address.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.1"
+      ],
+      "artifacts": [
+        "Address"
+      ]
+    },
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\utils\\introspection\\ERC165.sol": {
+      "lastModificationDate": 1783538764118,
       "contentHash": "0e7db055ce108f9da7bb6686a00287c0",
       "sourceName": "@openzeppelin/contracts/utils/introspection/ERC165.sol",
       "solcConfig": {
@@ -510,8 +547,45 @@
         "ERC165"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/token/ERC721/IERC721.sol": {
-      "lastModificationDate": 1782970047629,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\token\\ERC721\\IERC721Receiver.sol": {
+      "lastModificationDate": 1783538789470,
+      "contentHash": "c22d4395e33763de693fd440c6fd10e1",
+      "sourceName": "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "IERC721Receiver"
+      ]
+    },
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\token\\ERC721\\IERC721.sol": {
+      "lastModificationDate": 1783538787866,
       "contentHash": "48de4c9a3a4ae5ef66a2aa620843413f",
       "sourceName": "@openzeppelin/contracts/token/ERC721/IERC721.sol",
       "solcConfig": {
@@ -549,45 +623,8 @@
         "IERC721"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol": {
-      "lastModificationDate": 1782970047740,
-      "contentHash": "c22d4395e33763de693fd440c6fd10e1",
-      "sourceName": "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol",
-      "solcConfig": {
-        "version": "0.8.20",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "viaIR": true,
-          "evmVersion": "paris",
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        "^0.8.0"
-      ],
-      "artifacts": [
-        "IERC721Receiver"
-      ]
-    },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol": {
-      "lastModificationDate": 1782970047693,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\token\\ERC721\\extensions\\IERC721Metadata.sol": {
+      "lastModificationDate": 1783538788936,
       "contentHash": "efbc0d15b80a74e34dbe8da0f3e879bb",
       "sourceName": "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol",
       "solcConfig": {
@@ -625,8 +662,8 @@
         "IERC721Metadata"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/utils/math/Math.sol": {
-      "lastModificationDate": 1782970048132,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\utils\\math\\Math.sol": {
+      "lastModificationDate": 1783538793519,
       "contentHash": "fe63409d8a06818b926cf89e0ea88b1b",
       "sourceName": "@openzeppelin/contracts/utils/math/Math.sol",
       "solcConfig": {
@@ -662,8 +699,8 @@
         "Math"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/utils/math/SignedMath.sol": {
-      "lastModificationDate": 1782970048335,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\utils\\math\\SignedMath.sol": {
+      "lastModificationDate": 1783538796944,
       "contentHash": "9488ebd4daacfee8ad04811600d7d061",
       "sourceName": "@openzeppelin/contracts/utils/math/SignedMath.sol",
       "solcConfig": {
@@ -699,8 +736,8 @@
         "SignedMath"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/utils/introspection/IERC165.sol": {
-      "lastModificationDate": 1782970047405,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\utils\\introspection\\IERC165.sol": {
+      "lastModificationDate": 1783538783277,
       "contentHash": "03e6768535ac4da0e9756f1d8a4a018a",
       "sourceName": "@openzeppelin/contracts/utils/introspection/IERC165.sol",
       "solcConfig": {
@@ -736,8 +773,8 @@
         "IERC165"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/interfaces/IERC165.sol": {
-      "lastModificationDate": 1782970047398,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\interfaces\\IERC165.sol": {
+      "lastModificationDate": 1783538783102,
       "contentHash": "ee9624272968c23d93d4c2e39f06e6e2",
       "sourceName": "@openzeppelin/contracts/interfaces/IERC165.sol",
       "solcConfig": {
@@ -773,8 +810,8 @@
       ],
       "artifacts": []
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/interfaces/IERC4906.sol": {
-      "lastModificationDate": 1782970047583,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\interfaces\\IERC4906.sol": {
+      "lastModificationDate": 1783538786870,
       "contentHash": "d3f355e15269d1476d86c84730cebb5e",
       "sourceName": "@openzeppelin/contracts/interfaces/IERC4906.sol",
       "solcConfig": {
@@ -813,8 +850,8 @@
         "IERC4906"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/interfaces/IERC721.sol": {
-      "lastModificationDate": 1782970047620,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\interfaces\\IERC721.sol": {
+      "lastModificationDate": 1783538787642,
       "contentHash": "e6da7798a8c22c5043cc42d64a2a8f80",
       "sourceName": "@openzeppelin/contracts/interfaces/IERC721.sol",
       "solcConfig": {
@@ -850,8 +887,8 @@
       ],
       "artifacts": []
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol": {
-      "lastModificationDate": 1782970046561,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\token\\ERC721\\extensions\\ERC721URIStorage.sol": {
+      "lastModificationDate": 1783538774181,
       "contentHash": "de368c6a87e159c86544ae5041b58cf3",
       "sourceName": "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol",
       "solcConfig": {
@@ -890,8 +927,8 @@
         "ERC721URIStorage"
       ]
     },
-    "/workspaces/BimaGrid/contracts/contracts/tokens/PolicyNFT.sol": {
-      "lastModificationDate": 1782972212494,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\contracts\\tokens\\PolicyNFT.sol": {
+      "lastModificationDate": 1783004185663,
       "contentHash": "ba0862879c0c43f7f64c187b7e16c0d3",
       "sourceName": "contracts/tokens/PolicyNFT.sol",
       "solcConfig": {
@@ -930,8 +967,8 @@
         "PolicyNFT"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol": {
-      "lastModificationDate": 1782970046246,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\token\\ERC20\\extensions\\ERC20Votes.sol": {
+      "lastModificationDate": 1783538770043,
       "contentHash": "c093956f6e012e5967f5377362a91c23",
       "sourceName": "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol",
       "solcConfig": {
@@ -973,8 +1010,8 @@
         "ERC20Votes"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol": {
-      "lastModificationDate": 1782970046147,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\token\\ERC20\\extensions\\ERC20Permit.sol": {
+      "lastModificationDate": 1783538768601,
       "contentHash": "4cbcb1f6d01e01a02b6407bb67a78400",
       "sourceName": "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol",
       "solcConfig": {
@@ -1016,8 +1053,8 @@
         "ERC20Permit"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/interfaces/IERC5805.sol": {
-      "lastModificationDate": 1782970047606,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\interfaces\\IERC5805.sol": {
+      "lastModificationDate": 1783538787292,
       "contentHash": "78962c5ba0fec9f6cad8f71cf96ae30b",
       "sourceName": "@openzeppelin/contracts/interfaces/IERC5805.sol",
       "solcConfig": {
@@ -1056,45 +1093,8 @@
         "IERC5805"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/utils/math/SafeCast.sol": {
-      "lastModificationDate": 1782970048257,
-      "contentHash": "67cf2dfe1d1c22b4ea7f242e8a17f431",
-      "sourceName": "@openzeppelin/contracts/utils/math/SafeCast.sol",
-      "solcConfig": {
-        "version": "0.8.20",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "viaIR": true,
-          "evmVersion": "paris",
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        "^0.8.0"
-      ],
-      "artifacts": [
-        "SafeCast"
-      ]
-    },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol": {
-      "lastModificationDate": 1782970045097,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\utils\\cryptography\\ECDSA.sol": {
+      "lastModificationDate": 1783538757634,
       "contentHash": "d822a8a9468649cab463f29f5decf5cc",
       "sourceName": "@openzeppelin/contracts/utils/cryptography/ECDSA.sol",
       "solcConfig": {
@@ -1132,8 +1132,45 @@
         "ECDSA"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol": {
-      "lastModificationDate": 1782970045928,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\utils\\math\\SafeCast.sol": {
+      "lastModificationDate": 1783538796186,
+      "contentHash": "67cf2dfe1d1c22b4ea7f242e8a17f431",
+      "sourceName": "@openzeppelin/contracts/utils/math/SafeCast.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "SafeCast"
+      ]
+    },
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\token\\ERC20\\ERC20.sol": {
+      "lastModificationDate": 1783538767356,
       "contentHash": "3ae5166c6827a9cf1a7a462d1632b464",
       "sourceName": "@openzeppelin/contracts/token/ERC20/ERC20.sol",
       "solcConfig": {
@@ -1173,8 +1210,8 @@
         "ERC20"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/utils/Counters.sol": {
-      "lastModificationDate": 1782970044894,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\utils\\Counters.sol": {
+      "lastModificationDate": 1783538751835,
       "contentHash": "74654e3ae5d7f39555055dfe244dab7a",
       "sourceName": "@openzeppelin/contracts/utils/Counters.sol",
       "solcConfig": {
@@ -1210,8 +1247,8 @@
         "Counters"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/utils/cryptography/EIP712.sol": {
-      "lastModificationDate": 1782970045116,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\utils\\cryptography\\EIP712.sol": {
+      "lastModificationDate": 1783538757956,
       "contentHash": "459aeb9cc3fc3c6d67d30ffefb724aba",
       "sourceName": "@openzeppelin/contracts/utils/cryptography/EIP712.sol",
       "solcConfig": {
@@ -1251,8 +1288,8 @@
         "EIP712"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol": {
-      "lastModificationDate": 1782970047507,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\token\\ERC20\\extensions\\IERC20Permit.sol": {
+      "lastModificationDate": 1783538784908,
       "contentHash": "525fcdad8d171312933f47baf01d1ed8",
       "sourceName": "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol",
       "solcConfig": {
@@ -1288,8 +1325,8 @@
         "IERC20Permit"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol": {
-      "lastModificationDate": 1782970047461,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\token\\ERC20\\IERC20.sol": {
+      "lastModificationDate": 1783538784088,
       "contentHash": "df36f7051335cd1e748b1b6463b7fdd3",
       "sourceName": "@openzeppelin/contracts/token/ERC20/IERC20.sol",
       "solcConfig": {
@@ -1325,8 +1362,8 @@
         "IERC20"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol": {
-      "lastModificationDate": 1782970047487,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\token\\ERC20\\extensions\\IERC20Metadata.sol": {
+      "lastModificationDate": 1783538784493,
       "contentHash": "909ab67fc5c25033fe6cd364f8c056f9",
       "sourceName": "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol",
       "solcConfig": {
@@ -1364,8 +1401,45 @@
         "IERC20Metadata"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/utils/ShortStrings.sol": {
-      "lastModificationDate": 1782970048311,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\interfaces\\IERC5267.sol": {
+      "lastModificationDate": 1783538787023,
+      "contentHash": "b1756048024350a162c3be27c04aa652",
+      "sourceName": "@openzeppelin/contracts/interfaces/IERC5267.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "IERC5267"
+      ]
+    },
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\utils\\ShortStrings.sol": {
+      "lastModificationDate": 1783538796793,
       "contentHash": "8dde288da49722a70f34ee369be4bfba",
       "sourceName": "@openzeppelin/contracts/utils/ShortStrings.sol",
       "solcConfig": {
@@ -1403,45 +1477,8 @@
         "ShortStrings"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/interfaces/IERC5267.sol": {
-      "lastModificationDate": 1782970047592,
-      "contentHash": "b1756048024350a162c3be27c04aa652",
-      "sourceName": "@openzeppelin/contracts/interfaces/IERC5267.sol",
-      "solcConfig": {
-        "version": "0.8.20",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "viaIR": true,
-          "evmVersion": "paris",
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        "^0.8.0"
-      ],
-      "artifacts": [
-        "IERC5267"
-      ]
-    },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/utils/StorageSlot.sol": {
-      "lastModificationDate": 1782970048351,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\utils\\StorageSlot.sol": {
+      "lastModificationDate": 1783538797025,
       "contentHash": "682f7dd1f2e1147c8390e7575deceb2d",
       "sourceName": "@openzeppelin/contracts/utils/StorageSlot.sol",
       "solcConfig": {
@@ -1477,8 +1514,8 @@
         "StorageSlot"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/governance/utils/IVotes.sol": {
-      "lastModificationDate": 1782970047999,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\governance\\utils\\IVotes.sol": {
+      "lastModificationDate": 1783538792355,
       "contentHash": "e2ea5c24dc3967534a8ac4df343668c2",
       "sourceName": "@openzeppelin/contracts/governance/utils/IVotes.sol",
       "solcConfig": {
@@ -1514,8 +1551,8 @@
         "IVotes"
       ]
     },
-    "/workspaces/BimaGrid/contracts/node_modules/@openzeppelin/contracts/interfaces/IERC6372.sol": {
-      "lastModificationDate": 1782970047614,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\node_modules\\@openzeppelin\\contracts\\interfaces\\IERC6372.sol": {
+      "lastModificationDate": 1783538787422,
       "contentHash": "f9153597c0095dfaa672b15968161166",
       "sourceName": "@openzeppelin/contracts/interfaces/IERC6372.sol",
       "solcConfig": {
@@ -1551,8 +1588,8 @@
         "IERC6372"
       ]
     },
-    "/workspaces/BimaGrid/contracts/contracts/tokens/BimaToken.sol": {
-      "lastModificationDate": 1782972229839,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\contracts\\tokens\\BimaToken.sol": {
+      "lastModificationDate": 1783004185663,
       "contentHash": "c36a450d117e62d830101f9754490c26",
       "sourceName": "contracts/tokens/BimaToken.sol",
       "solcConfig": {
@@ -1593,8 +1630,8 @@
         "BimaToken"
       ]
     },
-    "/workspaces/BimaGrid/contracts/contracts/mocks/MockToken.sol": {
-      "lastModificationDate": 1782972203299,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\contracts\\mocks\\MockToken.sol": {
+      "lastModificationDate": 1783004185652,
       "contentHash": "f0fdc147cd1c608f1199ac2990409d20",
       "sourceName": "contracts/mocks/MockToken.sol",
       "solcConfig": {
@@ -1632,8 +1669,8 @@
         "MockToken"
       ]
     },
-    "/workspaces/BimaGrid/contracts/contracts/core/MitigationVerifier.sol": {
-      "lastModificationDate": 1782970067638,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\contracts\\core\\MitigationVerifier.sol": {
+      "lastModificationDate": 1783004185619,
       "contentHash": "6223f526adf69da7743841540515b096",
       "sourceName": "contracts/core/MitigationVerifier.sol",
       "solcConfig": {
@@ -1671,8 +1708,8 @@
         "MitigationVerifier"
       ]
     },
-    "/workspaces/BimaGrid/contracts/contracts/interfaces/IEscrow.sol": {
-      "lastModificationDate": 1782972125877,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\contracts\\interfaces\\IEscrow.sol": {
+      "lastModificationDate": 1783004185630,
       "contentHash": "96f04ec0cbabba8ea5b2d90754fe7648",
       "sourceName": "contracts/interfaces/IEscrow.sol",
       "solcConfig": {
@@ -1708,8 +1745,8 @@
         "IEscrow"
       ]
     },
-    "/workspaces/BimaGrid/contracts/contracts/interfaces/IOracle.sol": {
-      "lastModificationDate": 1782972128636,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\contracts\\interfaces\\IOracle.sol": {
+      "lastModificationDate": 1783004185632,
       "contentHash": "d6453706787bdfe5e572d9946b7f07ec",
       "sourceName": "contracts/interfaces/IOracle.sol",
       "solcConfig": {
@@ -1745,8 +1782,8 @@
         "IOracle"
       ]
     },
-    "/workspaces/BimaGrid/contracts/contracts/interfaces/IPolicy.sol": {
-      "lastModificationDate": 1782972123169,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\contracts\\interfaces\\IPolicy.sol": {
+      "lastModificationDate": 1783004185632,
       "contentHash": "ab8f22380cc093b42c65efe34e33b47b",
       "sourceName": "contracts/interfaces/IPolicy.sol",
       "solcConfig": {
@@ -1782,8 +1819,8 @@
         "IPolicy"
       ]
     },
-    "/workspaces/BimaGrid/contracts/contracts/interfaces/IVerification.sol": {
-      "lastModificationDate": 1782972132653,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\contracts\\interfaces\\IVerification.sol": {
+      "lastModificationDate": 1783004185634,
       "contentHash": "8d7c9b6ff8e0e7784e25adb33a50ca77",
       "sourceName": "contracts/interfaces/IVerification.sol",
       "solcConfig": {
@@ -1819,8 +1856,8 @@
         "IVerification"
       ]
     },
-    "/workspaces/BimaGrid/contracts/contracts/libraries/Math.sol": {
-      "lastModificationDate": 1782972137821,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\contracts\\libraries\\Math.sol": {
+      "lastModificationDate": 1783004185646,
       "contentHash": "f65c93e30c2e26f0a69949b7f9a9de07",
       "sourceName": "contracts/libraries/Math.sol",
       "solcConfig": {
@@ -1856,8 +1893,8 @@
         "Math"
       ]
     },
-    "/workspaces/BimaGrid/contracts/contracts/libraries/MerkleProof.sol": {
-      "lastModificationDate": 1782972146057,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\contracts\\libraries\\MerkleProof.sol": {
+      "lastModificationDate": 1783004185648,
       "contentHash": "d44b7ed5394a4f97f67a37602307b87f",
       "sourceName": "contracts/libraries/MerkleProof.sol",
       "solcConfig": {
@@ -1893,8 +1930,8 @@
         "MerkleProof"
       ]
     },
-    "/workspaces/BimaGrid/contracts/contracts/mocks/MockWeatherFeed.sol": {
-      "lastModificationDate": 1782972207594,
+    "C:\\Users\\stanl\\Desktop\\vscodeworkspace\\BimaGrid\\contracts\\contracts\\mocks\\MockWeatherFeed.sol": {
+      "lastModificationDate": 1783004185659,
       "contentHash": "0cefe2c76e406aa3ca70d0ea0ea086c3",
       "sourceName": "contracts/mocks/MockWeatherFeed.sol",
       "solcConfig": {

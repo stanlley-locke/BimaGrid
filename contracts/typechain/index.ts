@@ -48,6 +48,8 @@ export type { IERC165 } from "./@openzeppelin/contracts/utils/introspection/IERC
 export { IERC165__factory } from "./factories/@openzeppelin/contracts/utils/introspection/IERC165__factory";
 export type { ShortStrings } from "./@openzeppelin/contracts/utils/ShortStrings";
 export { ShortStrings__factory } from "./factories/@openzeppelin/contracts/utils/ShortStrings__factory";
+export type { BimaGridPolicy } from "./contracts/core/BimaGridPolicy";
+export { BimaGridPolicy__factory } from "./factories/contracts/core/BimaGridPolicy__factory";
 export type { EscrowVault } from "./contracts/core/EscrowVault";
 export { EscrowVault__factory } from "./factories/contracts/core/EscrowVault__factory";
 export type { KilimaShieldOracle } from "./contracts/core/KilimaShieldOracle";

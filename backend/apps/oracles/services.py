@@ -19,6 +19,7 @@ from .aggregators import (
 	median_of_submissions,
 	verify_oracle_signature,
 )
+from .blockchain import trigger_smart_contract_payout
 from .models import OracleConsensus, OracleSubmission
 
 
@@ -80,10 +81,17 @@ def ingest_oracle_payload(payload: dict[str, Any], signature: str) -> dict[str, 
 			metadata=aggregate_submissions(submissions),
 		)
 
+	drought_triggered = evaluate_drought_trigger(float(median_rainfall)) if consensus_result else False
+	
+	if drought_triggered:
+		# Normally, you'd fetch active policy IDs related to this h3_index
+		# For demonstration, we trigger policy #1
+		trigger_smart_contract_payout(1)
+
 	return {
 		"submissions": [str(item.id) for item in created],
 		"consensus": str(consensus_result.id) if consensus_result else None,
-		"drought_triggered": evaluate_drought_trigger(float(median_rainfall)) if consensus_result else False,
+		"drought_triggered": drought_triggered,
 		"timestamp": timestamp,
 	}
 

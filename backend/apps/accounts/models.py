@@ -22,6 +22,7 @@ class Profile(TimeStampedUUIDModel):
 		CUSTOMER = "customer", "Customer"
 		FARMER = "farmer", "Farmer"
 		BROKER = "broker", "Broker"
+		COOP = "coop", "Co-op"
 		ADMIN = "admin", "Admin"
 
 	class Language(models.TextChoices):
@@ -35,6 +36,7 @@ class Profile(TimeStampedUUIDModel):
 	role = models.CharField(max_length=16, choices=Role.choices, default=Role.CUSTOMER)
 	preferred_language = models.CharField(max_length=8, choices=Language.choices, default=Language.ENGLISH)
 	is_phone_verified = models.BooleanField(default=False)
+	requires_password_change = models.BooleanField(default=False)
 
 	class Meta:
 		ordering = ["full_name", "user__username"]

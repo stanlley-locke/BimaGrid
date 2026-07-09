@@ -14,7 +14,10 @@ dependencies = [
 	"psycopg[binary]",
 	"redis",
 	"celery",
+	"django-celery-beat",
 	"django-filter",
+	"africastalking",
+	"resend",
 ]
 
 [tool.setuptools]

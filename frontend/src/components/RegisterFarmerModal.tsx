@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-// mapcn imports
 import { Map, MapControls, MapMarker, MapRoute, MapGeoJSON } from './ui/map';
 
 const CROP_OPTIONS = [
@@ -31,9 +30,8 @@ function formatCurrency(value: string | number): string {
   }).format(amount);
 }
 
-// Map centering helper based on Kenyan counties [longitude, latitude]
 const getCountyCenter = (countyName?: string): [number, number] => {
-  if (!countyName) return [34.4534, -0.5298]; // Default to Homa Bay
+  if (!countyName) return [34.4534, -0.5298];
   const name = countyName.toUpperCase().trim();
   if (name.includes('HOMA')) return [34.4534, -0.5298];
   if (name.includes('NAIROBI')) return [36.8219, -1.2921];
@@ -45,13 +43,12 @@ const getCountyCenter = (countyName?: string): [number, number] => {
   if (name.includes('MERU')) return [37.6498, 0.0463];
   if (name.includes('KIAMBU')) return [36.8167, -1.1500];
   if (name.includes('NYERI')) return [36.9500, -0.4167];
-  return [34.4534, -0.5298]; // Fallback
+  return [34.4534, -0.5298];
 };
 
-// Spherical Shoelace formula for geodesic area in square meters
 const calculateGeodesicArea = (points: { lat: number; lng: number }[]) => {
   if (points.length < 3) return 0;
-  const radius = 6378137; // Earth's mean radius in meters
+  const radius = 6378137;
   let area = 0;
   
   for (let i = 0; i < points.length; i++) {
@@ -100,7 +97,6 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
   const [selectedConstituency, setSelectedConstituency] = useState('');
   const [selectedWard, setSelectedWard] = useState('');
 
-  // Map Polygon drawing state
   const [polygonPoints, setPolygonPoints] = useState<{ lat: number; lng: number }[]>([]);
   const [mapViewport, setMapViewport] = useState({
     center: [34.4534, -0.5298] as [number, number],
@@ -110,7 +106,6 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
   });
   const [isDrawingComplete, setIsDrawingComplete] = useState(false);
 
-  // Satellite queries state
   const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
   const [diagnosticsError, setDiagnosticsError] = useState<string | null>(null);
   const [diagnosticsData, setDiagnosticsData] = useState<{ rainfall: number; ndvi: number; soilMoisture: number } | null>(null);
@@ -212,7 +207,7 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
 
   const finishDrawing = () => {
     if (polygonPoints.length < 3) {
-      toast.error('Draw at least 3 points to outline your farm boundary');
+      toast.error('Draw at least 3 points to outline your farm boundary', { style: { background: '#1A1A1A', color: '#FFF' }});
       return;
     }
     
@@ -222,11 +217,10 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
     const acreageVal = Math.max(0.1, parseFloat((areaSqMeters / 4046.86).toFixed(1)));
     updateField('acreage', acreageVal.toString());
 
-    // Resolve an H3 index based on polygon center
     const indexStr = '8928308280fffff';
     updateField('h3_index', indexStr);
 
-    toast.success(`Farm boundary locked. Mapped to ${acreageVal} Acres under H3 Grid ${indexStr}`);
+    toast.success(`Boundary locked. Mapped to ${acreageVal} Acres`, { style: { background: '#1A1A1A', color: '#FFF' }});
   };
 
   const resetDrawing = () => {
@@ -234,7 +228,6 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
     setIsDrawingComplete(false);
   };
 
-  // Satellite Diagnostic Fetch
   const executeDiagnosticsQuery = async (targetH3: string) => {
     setDiagnosticsLoading(true);
     setDiagnosticsError(null);
@@ -276,7 +269,7 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
             clearInterval(interval);
             setIsUploading(false);
             setDocuments(current => [...current, { name: file.name, size: (file.size / 1024 / 1024).toFixed(2) + ' MB' }]);
-            toast.success(`${file.name} uploaded successfully!`);
+            toast.success(`${file.name} uploaded successfully!`, { style: { background: '#1A1A1A', color: '#FFF' }});
             return 0;
           }
           return prev + 30;
@@ -288,17 +281,17 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
   const handleNext = () => {
     if (step === 1) {
       if (!form.full_name || !form.username || !form.password || !form.phone_number || !form.mpesa_number) {
-        toast.error('Please fill in all account fields');
+        toast.error('Please fill in all required account fields', { style: { background: '#1A1A1A', color: '#FFF' }});
         return;
       }
     } else if (step === 2) {
       if (!selectedCounty || !selectedSubcounty || !selectedConstituency || !selectedWard) {
-        toast.error('Please select County, Subcounty, Constituency, and Ward');
+        toast.error('Please select County, Subcounty, Constituency, and Ward', { style: { background: '#1A1A1A', color: '#FFF' }});
         return;
       }
     } else if (step === 3) {
       if (polygonPoints.length < 3 || !isDrawingComplete) {
-        toast.error('Please draw and lock your farm outlines on the satellite map first');
+        toast.error('Please draw and lock your farm outlines', { style: { background: '#1A1A1A', color: '#FFF' }});
         return;
       }
       void executeDiagnosticsQuery(form.h3_index);
@@ -313,15 +306,15 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setIsSubmitting(true);
-    const tId = toast.loading('Registering farmer and generating plan...');
+    const tId = toast.loading('Registering farmer and generating plan...', { style: { background: '#1A1A1A', color: '#FFF' }});
 
     try {
       await dashboardApi.registerFarmer(form);
-      toast.success(`Farmer ${form.full_name} registered! Credentials sent via SMS.`, { id: tId });
+      toast.success(`Farmer registered! Credentials sent via SMS.`, { id: tId, style: { background: '#1A1A1A', color: '#FFF' } });
       onSuccess();
       onClose();
     } catch (submitError) {
-      toast.error(submitError instanceof Error ? submitError.message : 'Failed to register farmer.', { id: tId });
+      toast.error(submitError instanceof Error ? submitError.message : 'Failed to register farmer.', { id: tId, style: { background: '#1A1A1A', color: '#FFF' } });
     } finally {
       setIsSubmitting(false);
     }
@@ -329,12 +322,12 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 text-white font-sans">
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+          className="absolute inset-0 bg-[#0A0A0A]/80 backdrop-blur-sm"
           onClick={onClose}
         />
         
@@ -342,18 +335,17 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="card w-full max-w-2xl max-h-[95vh] overflow-y-auto relative z-10 p-6 sm:p-8 bg-white border border-slate-100 rounded-[1.5rem] shadow-2xl"
+          className="w-full max-w-2xl max-h-[95vh] overflow-y-auto relative z-10 p-6 sm:p-8 bg-[#141414] border border-[#2A2A2A] rounded-2xl shadow-2xl custom-scrollbar"
         >
-          <div className="absolute top-0 left-0 w-full h-2 bg-bima-green rounded-t-[1.5rem]" />
-          
-          <div className="mb-6 flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
+          {/* Header */}
+          <div className="mb-6 flex items-start justify-between gap-4 border-b border-[#2A2A2A] pb-4">
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-[1rem] bg-bima-lightGreen/50 text-bima-darkGreen">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#00E676]/10 text-[#00E676] border border-[#00E676]/20">
                 <Tractor className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-xl font-extrabold text-bima-darkGreen tracking-tight">Register Farmer</h2>
-                <p className="text-xs text-slate-500 font-medium">
+                <h2 className="text-xl font-bold text-white tracking-tight">Register Farmer</h2>
+                <p className="text-xs text-gray-400 mt-1">
                   Create a new farmer account and capture their farm details.
                 </p>
               </div>
@@ -361,7 +353,7 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
             <button
               type="button"
               onClick={onClose}
-              className="rounded-[1rem] p-2 bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+              className="rounded-lg p-2 bg-[#1A1A1A] text-gray-400 hover:text-white border border-[#2A2A2A] transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -369,8 +361,8 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
 
           {/* Premium Step Progress Tracker */}
           <div className="mb-8 flex items-center justify-between select-none relative px-4">
-            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-100 -z-10" />
-            <div className="absolute top-1/2 left-0 h-0.5 bg-bima-green -z-10 transition-all duration-300" style={{ width: `${(step - 1) * 25}%` }} />
+            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-[#2A2A2A] -z-10" />
+            <div className="absolute top-1/2 left-0 h-0.5 bg-[#00E676] -z-10 transition-all duration-300" style={{ width: `${(step - 1) * 25}%` }} />
             
             {[
               { label: 'Account', icon: User, stepNum: 1 },
@@ -382,14 +374,14 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
               <div key={item.stepNum} className="flex flex-col items-center">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 font-bold ${
                   step > item.stepNum 
-                    ? 'bg-bima-green border-bima-green text-white shadow-md' 
+                    ? 'bg-[#00E676] border-[#00E676] text-black shadow-md' 
                     : step === item.stepNum 
-                      ? 'bg-white border-bima-green text-bima-green shadow-[0_0_15px_rgba(101,154,95,0.2)] scale-110' 
-                      : 'bg-white border-slate-200 text-slate-400'
+                      ? 'bg-[#1A1A1A] border-[#00E676] text-[#00E676] shadow-[0_0_15px_rgba(0,230,118,0.2)] scale-110' 
+                      : 'bg-[#0A0A0A] border-[#2A2A2A] text-gray-500'
                 }`}>
                   <item.icon className="w-5 h-5" />
                 </div>
-                <span className={`text-[10px] font-black tracking-wide mt-2 transition-colors duration-300 ${step >= item.stepNum ? 'text-bima-darkGreen font-extrabold' : 'text-slate-400'}`}>
+                <span className={`text-[10px] font-bold tracking-wide mt-2 transition-colors duration-300 ${step >= item.stepNum ? 'text-white' : 'text-gray-500'}`}>
                   {item.label}
                 </span>
               </div>
@@ -401,9 +393,9 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
             {step === 1 && (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="grid gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2">
-                  <label className="block mb-1 text-xs font-bold text-slate-700">Full Name</label>
+                  <label className="block mb-1 text-xs font-bold text-gray-400">Full Name</label>
                   <input
-                    className="input-field py-2.5"
+                    className="w-full bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-[#00E676] transition-colors"
                     value={form.full_name}
                     onChange={(event) => updateField('full_name', event.target.value)}
                     placeholder="e.g. Wycliffe Omondi"
@@ -411,9 +403,9 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
                   />
                 </div>
                 <div>
-                  <label className="block mb-1 text-xs font-bold text-slate-700">Username</label>
+                  <label className="block mb-1 text-xs font-bold text-gray-400">Username</label>
                   <input
-                    className="input-field py-2.5"
+                    className="w-full bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-[#00E676] transition-colors"
                     value={form.username}
                     onChange={(event) => updateField('username', event.target.value)}
                     placeholder="e.g. wycliffeo"
@@ -421,10 +413,10 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
                   />
                 </div>
                 <div>
-                  <label className="block mb-1 text-xs font-bold text-slate-700">Temporary Password</label>
+                  <label className="block mb-1 text-xs font-bold text-gray-400">Temporary Password</label>
                   <input
                     type="password"
-                    className="input-field py-2.5"
+                    className="w-full bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-[#00E676] transition-colors"
                     value={form.password}
                     onChange={(event) => updateField('password', event.target.value)}
                     placeholder="••••••••"
@@ -432,22 +424,22 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
                   />
                 </div>
                 <div>
-                  <label className="block mb-1 text-xs font-bold text-slate-700">Phone Number</label>
+                  <label className="block mb-1 text-xs font-bold text-gray-400">Phone Number</label>
                   <div className="relative">
                     <input
-                      className="input-field py-2.5 pl-10"
+                      className="w-full bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-[#00E676] transition-colors"
                       placeholder="e.g. +254711223344"
                       value={form.phone_number}
                       onChange={(event) => updateField('phone_number', event.target.value)}
                       required
                     />
-                    <Phone className="absolute left-3 top-3.5 w-4 h-4 text-bima-green" />
+                    <Phone className="absolute left-3 top-2.5 w-4 h-4 text-[#00E676]" />
                   </div>
                 </div>
                 <div>
-                  <label className="block mb-1 text-xs font-bold text-slate-700">M-Pesa Number</label>
+                  <label className="block mb-1 text-xs font-bold text-gray-400">M-Pesa Number</label>
                   <input
-                    className="input-field py-2.5"
+                    className="w-full bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-[#00E676] transition-colors"
                     placeholder="e.g. 254711223344"
                     value={form.mpesa_number}
                     onChange={(event) => updateField('mpesa_number', event.target.value)}
@@ -455,10 +447,10 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block mb-1 text-xs font-bold text-slate-700">Email Address (Optional)</label>
+                  <label className="block mb-1 text-xs font-bold text-gray-400">Email Address (Optional)</label>
                   <input
                     type="email"
-                    className="input-field py-2.5"
+                    className="w-full bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-[#00E676] transition-colors"
                     value={form.email}
                     onChange={(event) => updateField('email', event.target.value)}
                     placeholder="e.g. wycliffe@bimagrid.com"
@@ -471,9 +463,9 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="block mb-1.5 text-xs font-black text-bima-darkGreen uppercase tracking-widest">County</label>
+                    <label className="block mb-1.5 text-xs font-bold text-gray-400 uppercase tracking-widest">County</label>
                     <select
-                      className="input-field py-3 appearance-none bg-white font-bold border-slate-200 focus:ring-bima-green focus:border-bima-green rounded-xl"
+                      className="w-full bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-sm text-white appearance-none focus:outline-none focus:border-[#00E676] transition-colors"
                       value={selectedCounty}
                       onChange={(e) => setSelectedCounty(e.target.value)}
                     >
@@ -482,9 +474,9 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
                     </select>
                   </div>
                   <div>
-                    <label className="block mb-1.5 text-xs font-black text-bima-darkGreen uppercase tracking-widest">Sub-county</label>
+                    <label className="block mb-1.5 text-xs font-bold text-gray-400 uppercase tracking-widest">Sub-county</label>
                     <select
-                      className="input-field py-3 appearance-none bg-white font-bold border-slate-200 focus:ring-bima-green focus:border-bima-green rounded-xl"
+                      className="w-full bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-sm text-white appearance-none focus:outline-none focus:border-[#00E676] transition-colors disabled:opacity-50"
                       value={selectedSubcounty}
                       onChange={(e) => setSelectedSubcounty(e.target.value)}
                       disabled={!selectedCounty}
@@ -494,9 +486,9 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
                     </select>
                   </div>
                   <div>
-                    <label className="block mb-1.5 text-xs font-black text-bima-darkGreen uppercase tracking-widest">Constituency</label>
+                    <label className="block mb-1.5 text-xs font-bold text-gray-400 uppercase tracking-widest">Constituency</label>
                     <select
-                      className="input-field py-3 appearance-none bg-white font-bold border-slate-200 focus:ring-bima-green focus:border-bima-green rounded-xl"
+                      className="w-full bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-sm text-white appearance-none focus:outline-none focus:border-[#00E676] transition-colors disabled:opacity-50"
                       value={selectedConstituency}
                       onChange={(e) => setSelectedConstituency(e.target.value)}
                       disabled={!selectedSubcounty}
@@ -506,9 +498,9 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
                     </select>
                   </div>
                   <div>
-                    <label className="block mb-1.5 text-xs font-black text-bima-darkGreen uppercase tracking-widest">Ward</label>
+                    <label className="block mb-1.5 text-xs font-bold text-gray-400 uppercase tracking-widest">Ward</label>
                     <select
-                      className="input-field py-3 appearance-none bg-white font-bold border-slate-200 focus:ring-bima-green focus:border-bima-green rounded-xl"
+                      className="w-full bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-sm text-white appearance-none focus:outline-none focus:border-[#00E676] transition-colors disabled:opacity-50"
                       value={selectedWard}
                       onChange={(e) => handleWardChange(e.target.value)}
                       disabled={!selectedConstituency}
@@ -520,14 +512,14 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
                 </div>
 
                 {selectedCounty && (
-                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center justify-between text-xs">
+                  <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 flex items-center justify-between text-xs mt-4">
                     <div>
-                      <p className="font-extrabold text-bima-darkGreen text-[13px]">{currentCountyObj?.name}</p>
-                      <p className="text-[10px] text-slate-400 font-bold mt-0.5">
-                        {subcounties.length > 0 ? `${subcounties.length} sub-counties loaded from database` : 'Loading subdivisions...'}
+                      <p className="font-bold text-white text-sm">{currentCountyObj?.name}</p>
+                      <p className="text-[10px] text-gray-500 font-bold mt-1 uppercase">
+                        {subcounties.length > 0 ? `${subcounties.length} sub-counties loaded` : 'Loading subdivisions...'}
                       </p>
                     </div>
-                    <MapIcon className="w-5 h-5 text-bima-green" />
+                    <MapIcon className="w-5 h-5 text-[#00E676]" />
                   </div>
                 )}
               </motion.div>
@@ -537,30 +529,31 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                 <div className="flex justify-between items-center text-xs">
                   <div>
-                    <h3 className="font-extrabold text-bima-darkGreen text-sm">Draw Farm Boundaries</h3>
-                    <p className="text-slate-500 font-medium mt-0.5">Click on the satellite map to plot boundary vertices</p>
+                    <h3 className="font-bold text-white text-sm">Draw Farm Boundaries</h3>
+                    <p className="text-gray-500 mt-0.5">Click on the satellite map to plot boundary vertices</p>
                   </div>
                   <div className="flex gap-2">
                     <button 
                       type="button" 
                       onClick={resetDrawing} 
-                      className="btn-secondary py-1.5 px-3 text-[10px] bg-slate-100 hover:bg-slate-200"
+                      className="bg-[#1A1A1A] border border-[#2A2A2A] text-white hover:bg-[#2A2A2A] py-1.5 px-3 rounded text-[10px] font-bold transition-colors"
                     >
-                      Reset Outline
+                      Reset
                     </button>
                     <button 
                       type="button" 
                       onClick={finishDrawing} 
                       disabled={polygonPoints.length < 3 || isDrawingComplete}
-                      className="btn-primary py-1.5 px-3 text-[10px] bg-bima-green hover:bg-bima-green/90 shadow-sm"
+                      className="bg-[#00E676] text-black hover:bg-[#00c968] py-1.5 px-3 rounded text-[10px] font-bold transition-colors disabled:opacity-50"
                     >
                       Lock Outline
                     </button>
                   </div>
                 </div>
 
-                {/* mapcn Interactive Satellite Map */}
-                <div className="relative border border-slate-200 rounded-2xl overflow-hidden h-[320px] shadow-inner select-none bg-slate-100 z-10">
+                {/* Map Integration Dark Theme */}
+                <div className="relative border border-[#2A2A2A] rounded-xl overflow-hidden h-[320px] bg-[#0A0A0A] z-10">
+                  <div className="absolute inset-0 bg-[#0A0A0A]/20 z-10 pointer-events-none mix-blend-multiply"></div>
                   <Map 
                     viewport={mapViewport} 
                     onViewportChange={(vp) => setMapViewport(vp)}
@@ -572,17 +565,15 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
                   >
                     <MapControls position="bottom-right" />
 
-                    {/* Render markers for each drawn vertex */}
                     {polygonPoints.map((p, idx) => (
                       <MapMarker 
                         key={idx} 
                         longitude={p.lng} 
                         latitude={p.lat}
-                        color={idx === 0 ? '#EAD35B' : '#659A5F'}
+                        color={idx === 0 ? '#00BCD4' : '#00E676'}
                       />
                     ))}
 
-                    {/* Render Route connect lines */}
                     {polygonPoints.length > 0 && (
                       <MapRoute 
                         coordinates={
@@ -590,14 +581,13 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
                             ? [...polygonPoints.map(p => [p.lng, p.lat] as [number, number]), [polygonPoints[0].lng, polygonPoints[0].lat] as [number, number]]
                             : polygonPoints.map(p => [p.lng, p.lat] as [number, number])
                         }
-                        color={isDrawingComplete ? '#659A5F' : '#EAD35B'}
+                        color={isDrawingComplete ? '#00E676' : '#00BCD4'}
                         width={3}
                         opacity={0.8}
                         dashArray={isDrawingComplete ? undefined : [5, 5]}
                       />
                     )}
                     
-                    {/* Render polygon fill using MapGeoJSON */}
                     {polygonPoints.length >= 3 && isDrawingComplete && (
                       <MapGeoJSON 
                         id="farm-polygon"
@@ -613,16 +603,16 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
                           }
                         }}
                         fillPaint={{
-                          "fill-color": "#659A5F",
-                          "fill-opacity": 0.4
+                          "fill-color": "#00E676",
+                          "fill-opacity": 0.3
                         }}
                         linePaint={false}
                       />
                     )}
                   </Map>
 
-                  {/* Sidebar Overlay panel */}
-                  <div className="absolute right-4 top-4 bg-slate-900/80 backdrop-blur border border-white/10 rounded-xl p-3 text-[10px] font-mono text-slate-300 space-y-1.5 w-44 pointer-events-none shadow-lg z-[1000]">
+                  {/* HUD */}
+                  <div className="absolute right-4 top-4 bg-[#0A0A0A]/90 backdrop-blur border border-[#2A2A2A] rounded-lg p-3 text-[10px] font-mono text-gray-400 space-y-2 w-44 z-20">
                     <div className="flex justify-between">
                       <span>Vertices:</span>
                       <span className="text-white font-bold">{polygonPoints.length}</span>
@@ -633,17 +623,17 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
                         {calculateGeodesicArea(polygonPoints).toFixed(0)} m²
                       </span>
                     </div>
-                    <div className="flex justify-between border-t border-white/10 pt-1.5">
+                    <div className="flex justify-between border-t border-[#2A2A2A] pt-2">
                       <span>Calculated Acreage:</span>
-                      <span className="text-bima-yellow font-black">
-                        {polygonPoints.length >= 3 ? (calculateGeodesicArea(polygonPoints) / 4046.86).toFixed(1) : '0.0'} Acres
+                      <span className="text-[#00E676] font-bold">
+                        {polygonPoints.length >= 3 ? (calculateGeodesicArea(polygonPoints) / 4046.86).toFixed(1) : '0.0'} Ac
                       </span>
                     </div>
                   </div>
 
                   {/* HUD Coordinates Display */}
-                  <div className="absolute left-4 bottom-4 bg-slate-900/80 backdrop-blur border border-white/10 rounded-lg px-2 py-1 text-[9px] font-mono text-slate-300 pointer-events-none z-[1000]">
-                    LAT: {mapViewport.center[1].toFixed(5)} | LNG: {mapViewport.center[0].toFixed(5)}
+                  <div className="absolute left-4 bottom-4 bg-[#0A0A0A]/90 backdrop-blur border border-[#2A2A2A] rounded-lg px-2 py-1 text-[9px] font-mono text-gray-400 z-20">
+                    {mapViewport.center[1].toFixed(5)}, {mapViewport.center[0].toFixed(5)}
                   </div>
                 </div>
               </motion.div>
@@ -653,8 +643,8 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
                 <div className="flex justify-between items-center text-xs">
                   <div>
-                    <h3 className="font-extrabold text-bima-darkGreen text-sm">Sentinel-2 Geospatial Diagnostics</h3>
-                    <p className="text-slate-500 font-medium mt-0.5">Real-time parameters derived for H3 cell: <span className="font-mono text-bima-darkGreen font-bold bg-slate-100 px-1.5 py-0.5 rounded">{form.h3_index}</span></p>
+                    <h3 className="font-bold text-white text-sm">Sentinel-2 Diagnostics</h3>
+                    <p className="text-gray-400 mt-0.5">Parameters derived for cell: <span className="font-mono text-white bg-[#1A1A1A] px-1.5 py-0.5 rounded border border-[#2A2A2A]">{form.h3_index}</span></p>
                   </div>
                 </div>
 
@@ -665,24 +655,24 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
                       initial={{ opacity: 0 }} 
                       animate={{ opacity: 1 }} 
                       exit={{ opacity: 0 }} 
-                      className="flex flex-col items-center justify-center p-12 bg-slate-50 border border-slate-100 rounded-3xl min-h-[220px]"
+                      className="flex flex-col items-center justify-center p-12 bg-[#0A0A0A] border border-[#2A2A2A] rounded-xl min-h-[220px]"
                     >
-                      <RefreshCw className="w-10 h-10 text-bima-green animate-spin mb-4" />
-                      <p className="text-sm font-bold text-bima-darkGreen">{diagnosticsMessage}</p>
-                      <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest font-black">Satellite Uplink Active</p>
+                      <RefreshCw className="w-10 h-10 text-[#00E676] animate-spin mb-4" />
+                      <p className="text-sm font-bold text-white">{diagnosticsMessage}</p>
+                      <p className="text-[10px] text-gray-500 mt-2 uppercase tracking-widest">Satellite Uplink Active</p>
                     </motion.div>
                   ) : diagnosticsError ? (
                     <motion.div 
                       key="error" 
                       initial={{ opacity: 0 }} 
                       animate={{ opacity: 1 }} 
-                      className="p-8 text-center bg-red-50 border border-red-100 rounded-3xl"
+                      className="p-8 text-center bg-red-900/10 border border-red-900/30 rounded-xl"
                     >
-                      <p className="text-sm font-bold text-red-600 mb-4">{diagnosticsError}</p>
+                      <p className="text-sm font-bold text-red-500 mb-4">{diagnosticsError}</p>
                       <button 
                         type="button" 
                         onClick={() => void executeDiagnosticsQuery(form.h3_index)} 
-                        className="btn-primary bg-red-600 hover:bg-red-700 py-2 px-4 text-xs inline-flex items-center gap-1.5"
+                        className="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg text-xs flex items-center gap-2 mx-auto transition-colors"
                       >
                         <RefreshCw className="w-3.5 h-3.5" /> Retry Connection
                       </button>
@@ -695,80 +685,70 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
                       className="space-y-4"
                     >
                       <div className="grid grid-cols-3 gap-4">
-                        {/* NDVI */}
-                        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col justify-between h-28">
-                          <div className="flex items-center justify-between text-emerald-600">
-                            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">NDVI Greenness</span>
-                            <Leaf className="w-4 h-4" />
+                        <div className="bg-[#0A0A0A] border border-[#2A2A2A] rounded-xl p-4 flex flex-col justify-between h-28">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">NDVI Greenness</span>
+                            <Leaf className="w-4 h-4 text-[#00BCD4]" />
                           </div>
                           <div>
-                            <p className="text-2xl font-black text-slate-800 font-mono">{diagnosticsData.ndvi.toFixed(2)}</p>
-                            <p className="text-[9px] font-bold text-emerald-500 mt-1">🟢 Optimal Crop Canopy</p>
+                            <p className="text-2xl font-bold text-white font-mono">{diagnosticsData.ndvi.toFixed(2)}</p>
+                            <p className="text-[9px] font-bold text-[#00E676] mt-1">Optimal Canopy</p>
                           </div>
                         </div>
 
-                        {/* Precipitation */}
-                        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col justify-between h-28">
-                          <div className="flex items-center justify-between text-blue-600">
-                            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Precipitation</span>
-                            <CloudRain className="w-4 h-4" />
+                        <div className="bg-[#0A0A0A] border border-[#2A2A2A] rounded-xl p-4 flex flex-col justify-between h-28">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Precipitation</span>
+                            <CloudRain className="w-4 h-4 text-[#2196F3]" />
                           </div>
                           <div>
-                            <p className="text-2xl font-black text-slate-800 font-mono">{diagnosticsData.rainfall.toFixed(1)} mm</p>
-                            <p className="text-[9px] font-bold text-blue-500 mt-1">🟢 Standard Baseline</p>
+                            <p className="text-2xl font-bold text-white font-mono">{diagnosticsData.rainfall.toFixed(1)} mm</p>
+                            <p className="text-[9px] font-bold text-[#2196F3] mt-1">Standard Baseline</p>
                           </div>
                         </div>
 
-                        {/* Soil Moisture */}
-                        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col justify-between h-28">
-                          <div className="flex items-center justify-between text-amber-600">
-                            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Soil Moisture</span>
-                            <BarChart2 className="w-4 h-4" />
+                        <div className="bg-[#0A0A0A] border border-[#2A2A2A] rounded-xl p-4 flex flex-col justify-between h-28">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Soil Moisture</span>
+                            <BarChart2 className="w-4 h-4 text-[#FFB300]" />
                           </div>
                           <div>
-                            <p className="text-2xl font-black text-slate-800 font-mono">{diagnosticsData.soilMoisture}%</p>
-                            <p className="text-[9px] font-bold text-amber-500 mt-1">🟢 Good retention</p>
+                            <p className="text-2xl font-bold text-white font-mono">{diagnosticsData.soilMoisture}%</p>
+                            <p className="text-[9px] font-bold text-[#FFB300] mt-1">Good retention</p>
                           </div>
                         </div>
                       </div>
 
-                      {/* Diagnostic Summary Seal */}
-                      <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-center justify-between text-xs">
+                      <div className="bg-[#00E676]/10 border border-[#00E676]/20 rounded-xl p-4 flex items-center justify-between text-xs mt-2">
                         <div>
-                          <p className="font-extrabold text-emerald-800">Parametric Condition: ACTIVE & ELIGIBLE</p>
-                          <p className="text-[10px] text-emerald-600/70 font-semibold mt-0.5">Vegetation indices and water volumes are currently within standard ranges. Plan setup allowed.</p>
+                          <p className="font-bold text-[#00E676]">Parametric Condition: ACTIVE & ELIGIBLE</p>
+                          <p className="text-[10px] text-gray-400 mt-1">Vegetation indices and water volumes are within standard ranges. Plan setup allowed.</p>
                         </div>
-                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                        <CheckCircle2 className="w-6 h-6 text-[#00E676]" />
                       </div>
                     </motion.div>
                   ) : null}
                 </AnimatePresence>
 
-                {/* Primary Crop configuration */}
-                <div className="grid gap-4 sm:grid-cols-2 pt-2 border-t border-slate-100">
+                <div className="grid gap-4 sm:grid-cols-2 pt-4 border-t border-[#2A2A2A]">
                   <div>
-                    <label className="block mb-1.5 text-xs font-black text-bima-darkGreen uppercase tracking-widest">Primary Crop</label>
-                    <div className="relative">
-                      <select
-                        className="input-field py-3 appearance-none pr-10 font-bold border-slate-200 rounded-xl"
-                        value={form.crop}
-                        onChange={(event) => updateField('crop', event.target.value)}
-                      >
-                        {CROP_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <Leaf className="absolute right-3 top-3.5 w-4 h-4 text-bima-green pointer-events-none" />
-                    </div>
+                    <label className="block mb-1.5 text-xs font-bold text-gray-400 uppercase tracking-widest">Primary Crop</label>
+                    <select
+                      className="w-full bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-sm text-white appearance-none focus:outline-none focus:border-[#00E676] transition-colors"
+                      value={form.crop}
+                      onChange={(event) => updateField('crop', event.target.value)}
+                    >
+                      {CROP_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
-                    <label className="block mb-1.5 text-xs font-black text-bima-darkGreen uppercase tracking-widest">Final Acreage Value</label>
+                    <label className="block mb-1.5 text-xs font-bold text-gray-400 uppercase tracking-widest">Acreage</label>
                     <input
                       type="number"
                       step="0.1"
-                      className="input-field py-2.5 font-bold border-slate-200 rounded-xl bg-slate-50"
+                      className="w-full bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none transition-colors"
                       value={form.acreage}
                       onChange={(event) => updateField('acreage', event.target.value)}
                       required
@@ -780,93 +760,87 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
 
             {step === 5 && (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
-                {/* Upload Title Deed */}
-                <div className="bg-slate-50 border border-dashed border-slate-300 rounded-[1rem] p-4 flex flex-col items-center justify-center text-center">
-                  <Upload className="w-8 h-8 text-bima-green mb-2" />
-                  <p className="text-xs font-bold text-slate-700 mb-1">Upload Title Deed / Farm Documents</p>
-                  <p className="text-[10px] text-slate-400 mb-3">Accepts PDF, PNG, JPG up to 10MB</p>
+                <div className="bg-[#0A0A0A] border border-dashed border-[#2A2A2A] rounded-xl p-6 flex flex-col items-center justify-center text-center">
+                  <Upload className="w-8 h-8 text-[#00E676] mb-3" />
+                  <p className="text-xs font-bold text-white mb-1">Upload Title Deed / Documents</p>
+                  <p className="text-[10px] text-gray-500 mb-4">Accepts PDF, PNG, JPG up to 10MB</p>
                   
-                  <label className="btn-secondary py-1.5 px-4 text-xs cursor-pointer inline-flex items-center gap-1.5">
+                  <label className="bg-[#1A1A1A] hover:bg-[#2A2A2A] border border-[#2A2A2A] text-white py-1.5 px-4 rounded-lg text-xs cursor-pointer inline-flex items-center transition-colors">
                     <span>Choose File</span>
                     <input type="file" className="hidden" onChange={handleFileChange} disabled={isUploading} />
                   </label>
 
                   {isUploading && (
-                    <div className="w-full max-w-xs mt-3">
-                      <div className="flex items-center justify-between text-[10px] text-slate-500 mb-1">
+                    <div className="w-full max-w-xs mt-4">
+                      <div className="flex items-center justify-between text-[10px] text-gray-400 mb-1">
                         <span>Uploading...</span>
                         <span>{uploadProgress}%</span>
                       </div>
-                      <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                        <div className="bg-bima-green h-1.5 transition-all duration-150" style={{ width: `${uploadProgress}%` }} />
+                      <div className="w-full bg-[#2A2A2A] h-1.5 rounded-full overflow-hidden">
+                        <div className="bg-[#00E676] h-1.5 transition-all duration-150" style={{ width: `${uploadProgress}%` }} />
                       </div>
                     </div>
                   )}
                 </div>
 
                 {documents.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Uploaded Documents</p>
+                  <div className="space-y-2 pt-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Uploaded Documents</p>
                     {documents.map((doc, idx) => (
-                      <div key={idx} className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-[0.75rem] p-2.5 text-xs text-slate-700">
+                      <div key={idx} className="flex items-center justify-between bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg p-3 text-xs">
                         <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-slate-400" />
-                          <span className="font-medium truncate max-w-[200px]">{doc.name}</span>
+                          <FileText className="w-4 h-4 text-gray-400" />
+                          <span className="font-medium text-white truncate max-w-[200px]">{doc.name}</span>
                         </div>
-                        <span className="text-[10px] font-mono text-slate-400">{doc.size}</span>
+                        <span className="text-[10px] font-mono text-gray-500">{doc.size}</span>
                       </div>
                     ))}
                   </div>
                 )}
 
-                {/* Account Review Summary Card */}
-                <div className="border border-slate-100 rounded-[1.25rem] p-4 bg-bima-lightGreen/10 space-y-3">
-                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-bima-darkGreen flex items-center gap-1.5 border-b border-bima-green/10 pb-2">
-                    <CheckCircle2 className="w-4 h-4" /> Summary Review
+                <div className="border border-[#2A2A2A] rounded-xl p-5 bg-[#0A0A0A] space-y-3">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2 border-b border-[#2A2A2A] pb-2">
+                    <CheckCircle2 className="w-4 h-4 text-[#00E676]" /> Summary Review
                   </h4>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs">
                     <div>
-                      <span className="text-slate-400 font-medium">Farmer:</span>
-                      <p className="font-extrabold text-slate-800">{form.full_name}</p>
+                      <span className="text-gray-500 font-bold text-[10px] uppercase">Farmer:</span>
+                      <p className="font-bold text-white mt-1">{form.full_name}</p>
                     </div>
                     <div>
-                      <span className="text-slate-400 font-medium">Phone / M-Pesa:</span>
-                      <p className="font-bold text-slate-800">{form.phone_number}</p>
+                      <span className="text-gray-500 font-bold text-[10px] uppercase">Phone:</span>
+                      <p className="font-bold text-white mt-1">{form.phone_number}</p>
                     </div>
                     <div>
-                      <span className="text-slate-400 font-medium">County / Sub-county:</span>
-                      <p className="font-semibold text-slate-800">{currentCountyObj?.name ?? '—'} / {currentSubcountyObj?.name ?? '—'}</p>
+                      <span className="text-gray-500 font-bold text-[10px] uppercase">Location:</span>
+                      <p className="font-medium text-white mt-1">{currentCountyObj?.name ?? '—'} / {currentSubcountyObj?.name ?? '—'}</p>
                     </div>
                     <div>
-                      <span className="text-slate-400 font-medium">Ward:</span>
-                      <p className="font-semibold text-slate-800">{currentWardObj?.name ?? '—'} ({form.ward_code})</p>
+                      <span className="text-gray-500 font-bold text-[10px] uppercase">Ward Code:</span>
+                      <p className="font-medium text-white mt-1">{currentWardObj?.name ?? '—'} ({form.ward_code || '—'})</p>
                     </div>
                     <div>
-                      <span className="text-slate-400 font-medium">Primary Crop:</span>
-                      <p className="font-bold text-slate-800 capitalize">{form.crop}</p>
+                      <span className="text-gray-500 font-bold text-[10px] uppercase">Crop:</span>
+                      <p className="font-bold text-white capitalize mt-1">{form.crop}</p>
                     </div>
                     <div>
-                      <span className="text-slate-400 font-medium">Acreage:</span>
-                      <p className="font-bold text-slate-800">{form.acreage} Acres</p>
-                    </div>
-                    <div className="col-span-2">
-                      <span className="text-slate-400 font-medium">H3 Grid Index:</span>
-                      <p className="font-mono text-xs font-bold text-slate-800">{form.h3_index}</p>
+                      <span className="text-gray-500 font-bold text-[10px] uppercase">Acreage:</span>
+                      <p className="font-bold text-[#00E676] mt-1">{form.acreage} Ac</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Dynamic cost banner */}
-                <div className="bg-gradient-to-br from-[#1B2B20] to-[#0f1812] rounded-2xl p-4 text-white flex justify-between items-center shadow-lg relative overflow-hidden">
+                <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 text-white flex justify-between items-center relative overflow-hidden mt-4">
                   <div>
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Plan Setup Premium</span>
-                    <p className="text-2xl font-black text-bima-yellow mt-0.5 font-mono">
+                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Plan Setup Premium</span>
+                    <p className="text-2xl font-bold text-[#00E676] mt-0.5 font-mono">
                       {formatCurrency(parseFloat(form.acreage || '0') * (form.crop === 'maize' ? 322 : form.crop === 'beans' ? 280 : form.crop === 'sorghum' ? 300 : form.crop === 'rice' ? 400 : form.crop === 'coffee' ? 450 : 500))}
                     </p>
                   </div>
                   <div className="text-right">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Blockchain Escrow</span>
-                    <span className="text-xs font-bold text-emerald-400 mt-0.5 block">Automated via Hardhat</span>
+                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest block">Blockchain Escrow</span>
+                    <span className="text-xs font-bold text-gray-400 mt-0.5 block">Automated via Hardhat</span>
                   </div>
                 </div>
               </motion.div>
@@ -874,12 +848,12 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
           </div>
 
           {/* Navigation Controls */}
-          <div className="flex gap-4 border-t border-slate-100 pt-4">
+          <div className="flex gap-4 border-t border-[#2A2A2A] pt-6">
             {step > 1 && (
               <button 
                 type="button" 
                 onClick={handleBack} 
-                className="btn-secondary py-3 text-sm flex items-center justify-center gap-1 flex-1"
+                className="bg-[#1A1A1A] border border-[#2A2A2A] text-white hover:bg-[#2A2A2A] py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 flex-1 transition-colors"
               >
                 <ChevronLeft className="w-4 h-4" /> Back
               </button>
@@ -889,7 +863,7 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
               <button 
                 type="button" 
                 onClick={handleNext} 
-                className="btn-primary py-3 text-sm flex items-center justify-center gap-1 flex-1 shadow-md hover:shadow-lg"
+                className="bg-[#00E676] hover:bg-[#00c968] text-black py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 flex-1 transition-colors"
               >
                 Next <ChevronRight className="w-4 h-4" />
               </button>
@@ -898,9 +872,10 @@ export default function RegisterFarmerModal({ isOpen, onClose, onSuccess }: Regi
                 type="button" 
                 onClick={handleSubmit} 
                 disabled={isSubmitting} 
-                className="btn-primary py-3 text-sm flex items-center justify-center gap-1.5 flex-1 shadow-md hover:shadow-lg bg-bima-darkGreen hover:bg-bima-darkGreen/90"
+                className="bg-[#00E676] hover:bg-[#00c968] text-black py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 flex-1 transition-colors disabled:opacity-50"
               >
-                {isSubmitting ? 'Creating...' : 'Confirm & Register Farmer'}
+                {isSubmitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
+                {isSubmitting ? 'Creating...' : 'Register Farmer'}
               </button>
             )}
           </div>

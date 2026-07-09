@@ -98,6 +98,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.ShortStrings__factory>;
     getContractFactory(
+      name: "BimaGridPolicy",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.BimaGridPolicy__factory>;
+    getContractFactory(
       name: "EscrowVault",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.EscrowVault__factory>;
@@ -256,6 +260,11 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.ShortStrings>;
     getContractAt(
+      name: "BimaGridPolicy",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.BimaGridPolicy>;
+    getContractAt(
       name: "EscrowVault",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
@@ -406,6 +415,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ShortStrings>;
     deployContract(
+      name: "BimaGridPolicy",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.BimaGridPolicy>;
+    deployContract(
       name: "EscrowVault",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.EscrowVault>;
@@ -563,6 +576,11 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ShortStrings>;
+    deployContract(
+      name: "BimaGridPolicy",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.BimaGridPolicy>;
     deployContract(
       name: "EscrowVault",
       args: any[],

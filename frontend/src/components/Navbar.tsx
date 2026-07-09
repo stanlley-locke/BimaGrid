@@ -83,7 +83,7 @@ export default function Navbar() {
               </div>
               <div className="flex flex-col">
                 <span className="text-xs font-medium text-white/70">Call us Now</span>
-                <span className="text-sm font-bold text-white">*384*XXX#</span>
+                <span className="text-sm font-bold text-white">*384*123254#</span>
               </div>
             </div>
 

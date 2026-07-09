@@ -4,14 +4,18 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import RegisterFarmerModal from '../components/RegisterFarmerModal';
 import StatusBadge from '../components/StatusBadge';
 import { useAuth } from '../context/AuthContext';
-import type { Claim, HealthResponse, Payout, Policy } from '../types';
+import type { Payout, Policy } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, FileText, Banknote, RefreshCw, Zap, CloudLightning, 
-  Activity, AlertCircle, ArrowUpRight, LayoutDashboard, Database,
-  Settings, Server, LogOut, Search, Menu, Bell, CloudRain, Shield, BookOpen, Sliders, Leaf, Tractor, X
+  ArrowUpRight, ArrowDownRight, LayoutDashboard,
+  Settings, Server, LogOut, Search, Bell, CloudRain, Shield, BookOpen, Leaf, X, 
+  ChevronRight, ChevronLeft, UserPlus
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+import { Map as MapcnMap, MapControls, MapMarker } from '../components/ui/map';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 function formatCurrency(value: string | number): string {
   const amount = typeof value === 'string' ? parseFloat(value) : value;
@@ -32,10 +36,38 @@ function formatDate(value: string): string {
   });
 }
 
+// Chart Mock Data
+const overviewData = [
+  { name: "Jan", premium: 15000, plans: 120, payouts: 5000 },
+  { name: "Feb", premium: 20000, plans: 150, payouts: 8000 },
+  { name: "Mar", premium: 18000, plans: 180, payouts: 6000 },
+  { name: "Apr", premium: 28000, plans: 200, payouts: 12000 },
+  { name: "May", premium: 30000, plans: 250, payouts: 15000 },
+  { name: "Jun", premium: 28000, plans: 280, payouts: 14000 },
+  { name: "Jul", premium: 35000, plans: 300, payouts: 18000 },
+  { name: "Aug", premium: 38000, plans: 320, payouts: 20000 },
+  { name: "Sep", premium: 37000, plans: 350, payouts: 19000 },
+  { name: "Oct", premium: 42000, plans: 380, payouts: 22000 },
+  { name: "Nov", premium: 45000, plans: 400, payouts: 25000 },
+  { name: "Dec", premium: 49000, plans: 450, payouts: 28000 },
+];
+
+const cropData = [
+  { name: "Maize", value: 45, color: "#00E676" },
+  { name: "Wheat", value: 25, color: "#00BCD4" },
+  { name: "Beans", value: 15, color: "#2196F3" },
+  { name: "Coffee", value: 15, color: "#9C27B0" },
+];
+
+const sparklineData1 = [{ value: 10 }, { value: 15 }, { value: 12 }, { value: 18 }, { value: 15 }, { value: 22 }, { value: 25 }, { value: 24 }];
+const sparklineData2 = [{ value: 20 }, { value: 25 }, { value: 22 }, { value: 28 }, { value: 26 }, { value: 30 }, { value: 32 }, { value: 35 }];
+const sparklineData3 = [{ value: 40 }, { value: 35 }, { value: 38 }, { value: 32 }, { value: 36 }, { value: 30 }, { value: 28 }, { value: 26 }];
+const sparklineData4 = [{ value: 10 }, { value: 12 }, { value: 15 }, { value: 18 }, { value: 16 }, { value: 20 }, { value: 22 }, { value: 25 }];
+
 const tabVariants = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 30 } },
-  exit: { opacity: 0, y: -20, transition: { duration: 0.2 } }
+  initial: { opacity: 0, y: 15 },
+  animate: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 350, damping: 28 } },
+  exit: { opacity: 0, y: -15, transition: { duration: 0.15 } }
 };
 
 type TabId = 'overview' | 'farmers' | 'claims' | 'weather' | 'resources' | 'system' | 'settings';
@@ -43,14 +75,12 @@ type TabId = 'overview' | 'farmers' | 'claims' | 'weather' | 'resources' | 'syst
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const [policies, setPolicies] = useState<Policy[]>([]);
-  const [claims, setClaims] = useState<Claim[]>([]);
   const [payouts, setPayouts] = useState<Payout[]>([]);
-  const [health, setHealth] = useState<HealthResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [evaluationH3, setEvaluationH3] = useState('8928308280fffff');
-  const [isEvaluating, setIsEvaluating] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const [chartTab, setChartTab] = useState('Premium');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [selectedPolicyForDetail, setSelectedPolicyForDetail] = useState<Policy | null>(null);
@@ -61,35 +91,42 @@ export default function Dashboard() {
     loading: false,
     error: null
   });
-  const [resourceSearch, setResourceSearch] = useState('');
-  const [calculatorAcreage, setCalculatorAcreage] = useState('1.0');
-  const [calculatorCrop, setCalculatorCrop] = useState('maize');
+
+  const [weatherViewport, setWeatherViewport] = useState({
+    center: [34.4534, -0.5298] as [number, number], // Homa Bay
+    zoom: 14,
+    bearing: 0,
+    pitch: 0
+  });
+
+  const getH3Coords = (h3Str: string): [number, number] => {
+    if (h3Str.trim() === '8928308280fffff' || h3Str.trim() === '8928308280ffffe') {
+      return [34.4534, -0.5298];
+    }
+    return [36.8219, -1.2921]; // Nairobi fallback
+  };
 
   const loadDashboard = useCallback(async (showToast = false) => {
     if (!showToast) setIsLoading(true);
     
     try {
-      const [policyData, claimData, payoutData, healthData] = await Promise.all([
+      const [policyData, payoutData] = await Promise.all([
         dashboardApi.getPolicies(),
-        dashboardApi.getClaims(),
         dashboardApi.getPayouts(),
-        dashboardApi.health().catch(() => null),
       ]);
 
       setPolicies(policyData);
-      setClaims(claimData);
       setPayouts(payoutData);
-      setHealth(healthData);
 
       if (policyData[0]?.coverage_h3) {
         setEvaluationH3(policyData[0].coverage_h3);
       }
       
       if (showToast) {
-        toast.success("Dashboard data refreshed");
+        toast.success("Dashboard data refreshed", { style: { background: '#1A1A1A', color: '#FFF' }});
       }
     } catch (loadError) {
-      toast.error(loadError instanceof Error ? loadError.message : 'Failed to load dashboard data.');
+      toast.error(loadError instanceof Error ? loadError.message : 'Failed to load data.', { style: { background: '#1A1A1A', color: '#FFF' }});
     } finally {
       setIsLoading(false);
     }
@@ -113,7 +150,15 @@ export default function Dashboard() {
         loading: false,
         error: null
       });
-      toast.success(`Weather analysis fetched for ${weatherSearchH3}`);
+
+      const coords = getH3Coords(weatherSearchH3);
+      setWeatherViewport(prev => ({
+        ...prev,
+        center: coords,
+        zoom: 14
+      }));
+
+      toast.success(`Weather fetched: ${weatherSearchH3}`, { style: { background: '#1A1A1A', color: '#FFF' }});
     } catch (err) {
       setWeatherAnalysis({
         rainfall: null,
@@ -121,14 +166,9 @@ export default function Dashboard() {
         loading: false,
         error: err instanceof Error ? err.message : 'Failed to query'
       });
-      toast.error('Failed to query weather metrics.');
+      toast.error('Failed to query weather metrics.', { style: { background: '#1A1A1A', color: '#FFF' }});
     }
   };
-
-  const activePolicies = useMemo(
-    () => policies.filter((policy) => policy.status === 'active'),
-    [policies],
-  );
 
   const totalPremium = useMemo(
     () => policies.reduce((sum, policy) => sum + parseFloat(policy.premium_amount || '0'), 0),
@@ -138,6 +178,11 @@ export default function Dashboard() {
   const totalPayouts = useMemo(
     () => payouts.reduce((sum, payout) => sum + parseFloat(payout.amount || '0'), 0),
     [payouts],
+  );
+
+  const activePolicies = useMemo(
+    () => policies.filter((policy) => policy.status === 'active'),
+    [policies],
   );
 
   const farmerRecords = useMemo(() => {
@@ -163,50 +208,17 @@ export default function Dashboard() {
     );
   }, [policies, searchQuery]);
 
-  const isAdmin = user?.profile?.role === 'admin' || user?.profile?.role === 'broker';
   const isFarmer = user?.profile?.role === 'farmer';
 
-  const farmerActivePoliciesCount = useMemo(
-    () => policies.filter((p) => p.status === 'active').length,
-    [policies]
-  );
-
-  const farmerTotalAcreage = useMemo(
-    () => policies.reduce((sum, p) => sum + parseFloat(p.insured_acreage || '0'), 0),
-    [policies]
-  );
-
-  const farmerTotalPremium = useMemo(
-    () => policies.reduce((sum, p) => sum + parseFloat(p.premium_amount || '0'), 0),
-    [policies]
-  );
-
-  const farmerTotalPayouts = useMemo(
-    () => payouts.reduce((sum, p) => sum + parseFloat(p.amount || '0'), 0),
-    [payouts]
-  );
-
-  const handleTriggerEvaluation = async () => {
-    setIsEvaluating(true);
-    const tId = toast.loading("Checking weather data...");
-    try {
-      await dashboardApi.triggerEvaluation({ h3_index: evaluationH3, simulate_drought: true });
-      toast.success(`Check started successfully.`, { id: tId });
-      await loadDashboard();
-    } catch (evalError) {
-      toast.error(evalError instanceof Error ? evalError.message : 'Failed to check weather.', { id: tId });
-    } finally {
-      setIsEvaluating(false);
-    }
-  };
 
   const handleSimulateDrought = async () => {
-    const tId = toast.loading("Simulating bad weather...");
+    const tId = toast.loading("Simulating severe drought event...", { style: { background: '#1A1A1A', color: '#FFF' }});
     try {
       await dashboardApi.simulateDrought({ h3_index: evaluationH3, rainfall_mm: 15, ndvi: 0.35 });
-      toast.success(`Bad weather simulation recorded for region ${evaluationH3}`, { id: tId });
+      toast.success(`Drought simulation dispatched for region: ${evaluationH3}`, { id: tId, style: { background: '#1A1A1A', color: '#FFF' } });
+      await loadDashboard();
     } catch (simError) {
-      toast.error(simError instanceof Error ? simError.message : 'Simulation failed.', { id: tId });
+      toast.error(simError instanceof Error ? simError.message : 'Simulation failed.', { id: tId, style: { background: '#1A1A1A', color: '#FFF' } });
     }
   };
 
@@ -214,827 +226,691 @@ export default function Dashboard() {
     <button 
       onClick={() => setActiveTab(id)}
       title={label}
-      className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center p-3' : 'gap-4 px-5 py-4'} rounded-2xl text-[13px] font-extrabold tracking-wide transition-all duration-300 ${activeTab === id ? 'bg-gradient-to-r from-[#1B2B20] to-[#2a4232] text-white shadow-[0_8px_20px_rgba(27,43,32,0.2)]' : 'text-slate-500 hover:bg-[#F4F1ED] hover:text-[#1B2B20]'}`}
+      className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-sm font-medium relative group ${
+        activeTab === id 
+          ? 'bg-[#1A1A1A] text-[#00E676]' 
+          : 'text-gray-400 hover:bg-[#1A1A1A] hover:text-white'
+      } ${isSidebarCollapsed ? 'justify-center px-0 w-10 h-10 mx-auto' : ''}`}
     >
-      <Icon className={`w-5 h-5 shrink-0 ${activeTab === id ? 'text-[#EAD35B]' : ''}`} /> 
-      {!isSidebarCollapsed && <span>{label}</span>}
+      {activeTab === id && !isSidebarCollapsed && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-[#00E676] rounded-r-md"></div>}
+      <Icon className={`w-5 h-5 flex-shrink-0 transition-colors ${activeTab === id ? 'text-[#00E676]' : 'text-gray-500 group-hover:text-gray-300'}`} /> 
+      {!isSidebarCollapsed && label}
     </button>
   );
 
   if (isLoading) {
     return (
-      <div className="h-screen bg-[#F8F7F5] flex items-center justify-center">
-        <LoadingSpinner label="Loading dashboard…" />
+      <div className="h-screen bg-[#0A0A0A] flex items-center justify-center">
+        <LoadingSpinner label="Loading dashboard telemetry…" />
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-[#F8F7F5] overflow-hidden selection:bg-bima-yellow/50">
-      {/* Sidebar */}
-      <aside className={`${isSidebarCollapsed ? 'w-[90px]' : 'w-[280px]'} bg-white border-r border-slate-100 flex flex-col flex-shrink-0 z-30 shadow-[4px_0_40px_rgba(0,0,0,0.02)] transition-all duration-300 ease-in-out relative`}>
-        <div className={`p-8 ${isSidebarCollapsed ? 'flex justify-center px-4' : ''}`}>
-          {!isSidebarCollapsed ? (
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <img src="/bimagrid_logo.png" alt="BimaGrid Logo" className="h-12 w-12 rounded-[14px] object-cover shadow-sm" />
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-bima-yellow rounded-full border-2 border-white"></div>
-              </div>
-              <div>
-                <p className="text-2xl font-black tracking-tight text-bima-darkGreen font-sans leading-none">bimagrid</p>
-                <p className="text-[10px] font-extrabold text-bima-green uppercase tracking-widest mt-1">
-                  {isFarmer ? 'Farmer Portal' : 'Agent Portal'}
-                </p>
-              </div>
+    <div className="flex h-screen bg-[#0A0A0A] text-white font-sans selection:bg-[#00E676] selection:text-black overflow-hidden">
+      
+      {/* Dark Sidebar */}
+      <aside className={`${isSidebarCollapsed ? 'w-20' : 'w-64'} bg-[#0A0A0A] border-r border-[#1F1F1F] flex flex-col flex-shrink-0 transition-all duration-300 z-30 relative`}>
+        {/* Collapse Toggle Button */}
+        <button 
+          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          className="absolute -right-3 top-6 bg-[#1A1A1A] border border-[#2A2A2A] text-gray-400 hover:text-white rounded-full p-1 z-40 transition-colors"
+        >
+          {isSidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+        </button>
+
+        <div className={`p-5 border-b border-[#1F1F1F] flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'} flex-shrink-0 h-[72px]`}>
+          <div className="flex-shrink-0 relative">
+            <img src="/bimagrid_logo.png" alt="Logo" className="w-8 h-8 rounded-lg object-cover" />
+            <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#00E676] rounded-full border-2 border-[#0A0A0A]"></div>
+          </div>
+          {!isSidebarCollapsed && (
+            <div>
+              <p className="text-base font-bold tracking-tight text-white leading-none">BimaGrid</p>
+              <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">
+                {isFarmer ? 'Farmer Portal' : 'Agent Dashboard'}
+              </p>
             </div>
-          ) : (
-            <img src="/bimagrid_logo.png" alt="BimaGrid Logo" className="h-12 w-12 rounded-[14px] object-cover shadow-sm" />
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar px-4 pb-8 space-y-2 mt-2">
-          {!isSidebarCollapsed && (
-            <p className="px-5 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-4">Main Navigation</p>
-          )}
+        <nav className={`p-3 flex flex-col gap-1 font-sans overflow-y-auto overflow-x-hidden flex-1 pb-24 ${isSidebarCollapsed ? 'items-center' : ''}`}>
+          {!isSidebarCollapsed ? (
+             <div className="pt-4 pb-1 px-4 text-[11px] font-bold text-gray-500 uppercase tracking-widest">Overview</div>
+          ) : <div className="h-4"></div>}
           
-          <NavItem id="overview" icon={LayoutDashboard} label="Overview" />
-          {isFarmer ? (
-            <NavItem id="farmers" icon={Shield} label="My Policies" />
-          ) : (
-            <NavItem id="farmers" icon={Users} label="Farmers & Plans" />
-          )}
-          <NavItem id="claims" icon={Banknote} label={isFarmer ? "My Payouts" : "Claims & Payouts"} />
+          <NavItem id="overview" icon={LayoutDashboard} label="Dashboard" />
+          <NavItem id="farmers" icon={Users} label={isFarmer ? "My Policies" : "Farmers & Plans"} />
+          <NavItem id="claims" icon={Banknote} label="Claims & Payouts" />
           {!isFarmer && <NavItem id="weather" icon={CloudRain} label="Weather Analytics" />}
           
-          <div className="my-6"></div>
-          {!isSidebarCollapsed && (
-            <p className="px-5 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-4">
-              {isFarmer ? "Account" : "Management"}
-            </p>
-          )}
+          {!isSidebarCollapsed ? (
+             <div className="pt-4 pb-1 px-4 text-[11px] font-bold text-gray-500 uppercase tracking-widest">Management</div>
+          ) : <div className="h-4"></div>}
           
           {!isFarmer && <NavItem id="resources" icon={BookOpen} label="Agent Resources" />}
-          {!isFarmer && <NavItem id="system" icon={Server} label="System Actions" />}
-          <NavItem id="settings" icon={Sliders} label="Settings" />
-        </div>
+          {!isFarmer && <NavItem id="system" icon={Server} label="System Settings" /> }
+          <NavItem id="settings" icon={Settings} label="Profile Settings" />
+        </nav>
 
-        <div className="p-4 border-t border-slate-100 bg-slate-50/50">
-          {!isSidebarCollapsed && !isFarmer && (
-            <button type="button" onClick={() => setIsRegisterModalOpen(true)} className="w-full flex items-center justify-center gap-2 py-4 px-4 border border-transparent rounded-2xl shadow-[0_4px_14px_rgba(101,154,95,0.3)] text-sm font-bold text-white bg-bima-green hover:bg-[#527d4c] transition-all mb-3 hover:-translate-y-0.5">
-              <Shield className="w-4 h-4" /> Register Farmer
+        {/* User Profile Block */}
+        <div className={`absolute bottom-0 w-full p-4 border-t border-[#1F1F1F] bg-[#0A0A0A] flex ${isSidebarCollapsed ? 'justify-center' : 'justify-between items-center'}`}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-[#00E676] text-black flex items-center justify-center font-bold text-sm flex-shrink-0">
+              {user?.profile?.full_name?.charAt(0) || user?.username?.charAt(0) || 'A'}
+            </div>
+            {!isSidebarCollapsed && (
+              <div className="flex flex-col whitespace-nowrap overflow-hidden">
+                <span className="text-white font-semibold text-sm truncate">{user?.profile?.full_name || 'Agent'}</span>
+                <span className="text-gray-500 text-xs capitalize truncate">{user?.profile?.role || 'Admin'}</span>
+              </div>
+            )}
+          </div>
+          {!isSidebarCollapsed && (
+            <button onClick={() => void logout()} className="text-gray-500 hover:text-red-500 transition-colors shrink-0">
+              <LogOut className="w-5 h-5" />
             </button>
           )}
-          <button 
-            type="button" 
-            onClick={() => void logout()} 
-            title="Sign Out"
-            className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center p-4' : 'gap-3 px-5 py-4'} rounded-2xl text-[13px] font-extrabold text-red-500 hover:bg-red-50 transition-colors`}
-          >
-            <LogOut className="w-5 h-5 shrink-0" /> {!isSidebarCollapsed && <span>Sign Out</span>}
-          </button>
         </div>
       </aside>
 
       {/* Main Area */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-screen min-w-0 border-l border-[#1F1F1F] overflow-hidden">
         
-        {/* Dedicated Dashboard Navbar */}
-        <header className="h-[90px] bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-6 sm:px-10 shrink-0 relative z-20">
-           <div className="flex items-center gap-6">
-             <button 
-                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
-                className="p-3 text-slate-400 hover:text-bima-darkGreen bg-white hover:bg-slate-50 rounded-2xl shadow-sm border border-slate-100 transition-all focus:outline-none focus:ring-2 focus:ring-bima-yellow"
-             >
-               <Menu className="w-5 h-5" />
-             </button>
-             <div className="hidden sm:block">
-               <h2 className="text-[22px] font-black text-bima-darkGreen capitalize tracking-tight">
-                  {isFarmer && activeTab === 'farmers' ? 'My Policies' : isFarmer && activeTab === 'claims' ? 'My Payouts' : activeTab.replace('-', ' ')}
-               </h2>
-               <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
-                 <span>Portal</span> <span className="w-1 h-1 rounded-full bg-slate-300"></span> <span className="text-bima-green">{isFarmer && activeTab === 'farmers' ? 'My Policies' : isFarmer && activeTab === 'claims' ? 'My Payouts' : activeTab.replace('-', ' ')}</span>
+        {/* Dark Top Nav */}
+        <header className="h-[72px] bg-[#0A0A0A] border-b border-[#1F1F1F] flex items-center justify-between px-6 shrink-0 relative z-20">
+          <div className="flex items-center gap-4 flex-1">
+             <div className="relative max-w-md w-full hidden md:block">
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+               <input 
+                 type="text" 
+                 placeholder="Search anything..." 
+                 className="w-full bg-[#141414] border border-[#2A2A2A] rounded-lg pl-10 pr-12 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#00E676] transition-colors"
+               />
+               <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                 <kbd className="bg-[#2A2A2A] text-gray-400 px-1.5 py-0.5 rounded text-[10px] font-mono border border-[#3A3A3A]">⌘K</kbd>
                </div>
              </div>
-           </div>
-           
-           <div className="flex items-center gap-6">
-              <button className="relative p-3 bg-white border border-slate-100 shadow-sm text-slate-400 hover:text-bima-darkGreen rounded-2xl transition-all group hover:-translate-y-0.5 hover:shadow-md">
-                 <Bell className="w-5 h-5 group-hover:animate-wiggle" />
-                 <span className="absolute top-2 right-2.5 w-2.5 h-2.5 bg-bima-yellow border-2 border-white rounded-full animate-pulse"></span>
-              </button>
-              
-              <div className="h-10 w-px bg-slate-200"></div>
-              
-              <div className="flex items-center gap-4 cursor-pointer group bg-white border border-slate-100 p-2 pr-5 rounded-[20px] shadow-sm hover:shadow-md transition-all">
-                 <div className="w-10 h-10 rounded-[14px] bg-gradient-to-br from-bima-lightGreen to-bima-green flex items-center justify-center font-black text-white text-lg shadow-inner">
-                   {user?.profile?.full_name?.charAt(0) || user?.username?.charAt(0) || 'A'}
-                 </div>
-                 <div className="hidden md:block text-sm text-left">
-                   <p className="font-extrabold text-bima-darkGreen group-hover:text-bima-green transition-colors leading-tight">{user?.profile?.full_name || 'Agent'}</p>
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{user?.profile?.role || 'Broker'}</p>
-                 </div>
-              </div>
-           </div>
-        </header>
-
-        {/* Scrollable Content Area */}
-        <main className="flex-1 overflow-y-auto relative z-10 scroll-smooth p-6 sm:p-10">
-          <div className="absolute inset-0 opacity-[0.02] pointer-events-none -z-10" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='3' cy='3' r='1.5' fill='%231B2B20'/%3E%3C/svg%3E\")", backgroundSize: "24px 24px" }}></div>
+          </div>
           
-          <div className="max-w-[1400px] mx-auto">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
-              <div>
-                <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-bima-darkGreen capitalize">
-                  {activeTab === 'overview' ? `Welcome back, ${user?.profile?.full_name?.split(' ')[0] || (isFarmer ? 'Farmer' : 'Agent')}` : isFarmer && activeTab === 'farmers' ? 'My Policies' : isFarmer && activeTab === 'claims' ? 'My Payouts' : activeTab.replace('-', ' ')}
-                </h1>
-                {activeTab === 'overview' && (
-                   <p className="text-[15px] font-semibold text-slate-500 mt-2 max-w-xl leading-relaxed">
-                     {isFarmer ? 'Here is a summary of your active crop protection plans and payouts.' : "Here is what's happening with your registered farm protection plans today."}
-                   </p>
-                )}
-              </div>
-              <button type="button" onClick={() => void loadDashboard(true)} className="btn-secondary gap-2 text-sm px-5 py-3 bg-white hover:bg-slate-50 shadow-sm border border-slate-200 shrink-0 hover:-translate-y-0.5 transition-transform">
-                <RefreshCw className="w-4 h-4 text-bima-green" /> <span className="hidden sm:inline text-bima-darkGreen">Refresh Data</span>
+          <div className="flex items-center gap-4 shrink-0">
+            {!isFarmer && (
+              <button 
+                onClick={() => setIsRegisterModalOpen(true)}
+                className="hidden sm:flex items-center gap-2 bg-[#00E676] hover:bg-[#00c968] text-black px-4 py-2 rounded-lg font-bold text-sm transition-colors"
+              >
+                + New Farmer
+              </button>
+            )}
+            <div className="flex items-center gap-2">
+              <button className="p-2 text-gray-400 hover:text-white transition-colors"><Shield className="w-5 h-5" /></button>
+              <button className="p-2 text-gray-400 hover:text-white transition-colors relative">
+                 <Bell className="w-5 h-5" />
+                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-[#0A0A0A]"></span>
               </button>
             </div>
+            
+            <div className="w-8 h-8 rounded-full bg-[#00E676] text-black flex items-center justify-center font-bold text-sm">
+               {user?.profile?.full_name?.charAt(0) || 'A'}
+            </div>
+          </div>
+        </header>
+
+        {/* Scrollable Content */}
+        <main className="flex-1 overflow-y-auto p-6 lg:p-8 bg-[#0A0A0A] w-full custom-scrollbar">
+          <div className="max-w-[1400px] mx-auto space-y-6">
+            
+            {/* Header Title */}
+            {activeTab === 'overview' && (
+              <div className="mb-8 flex justify-between items-end">
+                <div>
+                  <h1 className="text-2xl font-bold text-white mb-1">Dashboard</h1>
+                  <p className="text-sm text-gray-500">Welcome back, {user?.profile?.full_name?.split(' ')[0] || 'Agent'}. Here's what's happening with your plans today.</p>
+                </div>
+                <button 
+                  onClick={() => void loadDashboard(true)}
+                  className="bg-[#141414] border border-[#2A2A2A] text-white hover:border-[#00E676] px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                  <RefreshCw className="w-4 h-4" /> Refresh
+                </button>
+              </div>
+            )}
 
             <AnimatePresence mode="wait">
               {activeTab === 'overview' && (
-                <motion.div key="overview" variants={tabVariants} initial="initial" animate="animate" exit="exit" className="space-y-10">
-                  {/* Premium Stats Grid */}
-                  <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-                    {isFarmer ? (
-                      [
-                        { label: 'Active Policies', value: farmerActivePoliciesCount, icon: Shield, color: 'text-[#EAD35B]', bg: 'bg-[#EAD35B]/20', gradient: 'from-[#EAD35B]/30' },
-                        { label: 'Insured Farm Size', value: `${farmerTotalAcreage.toFixed(1)} Acres`, icon: Leaf, color: 'text-[#659A5F]', bg: 'bg-[#659A5F]/10', gradient: 'from-[#659A5F]/20' },
-                        { label: 'Premium Paid', value: formatCurrency(farmerTotalPremium), icon: Banknote, color: 'text-[#1B2B20]', bg: 'bg-[#1B2B20]/5', gradient: 'from-[#1B2B20]/10' },
-                        { label: 'Payouts Received', value: formatCurrency(farmerTotalPayouts), icon: Zap, color: 'text-[#5A8855]', bg: 'bg-[#5A8855]/10', gradient: 'from-[#5A8855]/20' },
-                      ].map((stat) => (
-                        <div key={stat.label} className="relative group overflow-hidden bg-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:shadow-[0_8px_40px_rgb(27,43,32,0.08)] hover:-translate-y-1 transition-all duration-300">
-                          <div className={`absolute -top-10 -right-10 w-40 h-40 opacity-40 bg-gradient-to-bl ${stat.gradient} to-transparent rounded-full -z-10 group-hover:scale-150 transition-transform duration-700 ease-out`}></div>
-                          <div className={`w-14 h-14 rounded-[14px] ${stat.bg} flex items-center justify-center mb-6 shadow-inner`}>
-                            <stat.icon className={`w-7 h-7 ${stat.color}`} />
+                <motion.div key="overview" variants={tabVariants} initial="initial" animate="animate" exit="exit" className="space-y-6">
+                  
+                  {/* Top Metric Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {/* Total Premium */}
+                    <div className="bg-[#141414] border border-[#2A2A2A] rounded-xl overflow-hidden relative group">
+                      <div className="p-5 pb-0">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="text-sm font-medium text-gray-500">Total Premium</h3>
+                          <div className="w-8 h-8 rounded-full bg-[#00E676]/10 flex items-center justify-center">
+                            <Banknote className="w-4 h-4 text-[#00E676]" />
                           </div>
-                          <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
-                          <p className="mt-2 text-3xl font-black text-bima-darkGreen tracking-tighter">{stat.value}</p>
                         </div>
-                      ))
-                    ) : (
-                      [
-                        { label: 'Farmers Registered', value: farmerRecords.length, icon: Users, color: 'text-[#659A5F]', bg: 'bg-[#659A5F]/10', gradient: 'from-[#659A5F]/20' },
-                        { label: 'Active Plans', value: activePolicies.length, icon: FileText, color: 'text-[#EAD35B]', bg: 'bg-[#EAD35B]/20', gradient: 'from-[#EAD35B]/30' },
-                        { label: 'Total Payments', value: formatCurrency(totalPremium), icon: Banknote, color: 'text-[#1B2B20]', bg: 'bg-[#1B2B20]/5', gradient: 'from-[#1B2B20]/10' },
-                        { label: 'Recent Payouts', value: formatCurrency(totalPayouts), icon: Zap, color: 'text-[#5A8855]', bg: 'bg-[#5A8855]/10', gradient: 'from-[#5A8855]/20' },
-                      ].map((stat) => (
-                        <div key={stat.label} className="relative group overflow-hidden bg-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:shadow-[0_8px_40px_rgb(27,43,32,0.08)] hover:-translate-y-1 transition-all duration-300">
-                          <div className={`absolute -top-10 -right-10 w-40 h-40 opacity-40 bg-gradient-to-bl ${stat.gradient} to-transparent rounded-full -z-10 group-hover:scale-150 transition-transform duration-700 ease-out`}></div>
-                          <div className={`w-14 h-14 rounded-[14px] ${stat.bg} flex items-center justify-center mb-6 shadow-inner`}>
-                            <stat.icon className={`w-7 h-7 ${stat.color}`} />
+                        <div className="text-3xl font-bold text-white mb-2">{formatCurrency(totalPremium)}</div>
+                        <div className="flex items-center text-xs font-medium">
+                          <span className="text-[#00E676] flex items-center"><ArrowUpRight className="w-3 h-3 mr-0.5" /> +12.5%</span>
+                          <span className="text-gray-500 ml-1">vs last month</span>
+                        </div>
+                      </div>
+                      <div className="h-16 w-full mt-2 relative -bottom-1">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={sparklineData1}>
+                            <defs>
+                              <linearGradient id="colorSpark1" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#00E676" stopOpacity={0.2} />
+                                <stop offset="95%" stopColor="#00E676" stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <Area type="monotone" dataKey="value" stroke="#00E676" strokeWidth={2} fillOpacity={1} fill="url(#colorSpark1)" isAnimationActive={false} />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    {/* Active Farmers */}
+                    <div className="bg-[#141414] border border-[#2A2A2A] rounded-xl overflow-hidden relative group">
+                      <div className="p-5 pb-0">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="text-sm font-medium text-gray-500">Registered Farmers</h3>
+                          <div className="w-8 h-8 rounded-full bg-[#00BCD4]/10 flex items-center justify-center">
+                            <Users className="w-4 h-4 text-[#00BCD4]" />
                           </div>
-                          <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
-                          <p className="mt-2 text-3xl font-black text-bima-darkGreen tracking-tighter">{stat.value}</p>
                         </div>
-                      ))
-                    )}
+                        <div className="text-3xl font-bold text-white mb-2">{farmerRecords.length}</div>
+                        <div className="flex items-center text-xs font-medium">
+                          <span className="text-[#00E676] flex items-center"><ArrowUpRight className="w-3 h-3 mr-0.5" /> +8.2%</span>
+                          <span className="text-gray-500 ml-1">vs last month</span>
+                        </div>
+                      </div>
+                      <div className="h-16 w-full mt-2 relative -bottom-1">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={sparklineData2}>
+                            <defs>
+                              <linearGradient id="colorSpark2" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#00BCD4" stopOpacity={0.2} />
+                                <stop offset="95%" stopColor="#00BCD4" stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <Area type="monotone" dataKey="value" stroke="#00BCD4" strokeWidth={2} fillOpacity={1} fill="url(#colorSpark2)" isAnimationActive={false} />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    {/* Total Policies */}
+                    <div className="bg-[#141414] border border-[#2A2A2A] rounded-xl overflow-hidden relative group">
+                      <div className="p-5 pb-0">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="text-sm font-medium text-gray-500">Active Policies</h3>
+                          <div className="w-8 h-8 rounded-full bg-[#2196F3]/10 flex items-center justify-center">
+                            <FileText className="w-4 h-4 text-[#2196F3]" />
+                          </div>
+                        </div>
+                        <div className="text-3xl font-bold text-white mb-2">{activePolicies.length}</div>
+                        <div className="flex items-center text-xs font-medium">
+                          <span className="text-red-500 flex items-center"><ArrowDownRight className="w-3 h-3 mr-0.5" /> -3.1%</span>
+                          <span className="text-gray-500 ml-1">vs last month</span>
+                        </div>
+                      </div>
+                      <div className="h-16 w-full mt-2 relative -bottom-1">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={sparklineData3}>
+                            <defs>
+                              <linearGradient id="colorSpark3" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#2196F3" stopOpacity={0.2} />
+                                <stop offset="95%" stopColor="#2196F3" stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <Area type="monotone" dataKey="value" stroke="#2196F3" strokeWidth={2} fillOpacity={1} fill="url(#colorSpark3)" isAnimationActive={false} />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    {/* Total Payouts */}
+                    <div className="bg-[#141414] border border-[#2A2A2A] rounded-xl overflow-hidden relative group">
+                      <div className="p-5 pb-0">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="text-sm font-medium text-gray-500">Total Payouts</h3>
+                          <div className="w-8 h-8 rounded-full bg-[#FFB300]/10 flex items-center justify-center">
+                            <Zap className="w-4 h-4 text-[#FFB300]" />
+                          </div>
+                        </div>
+                        <div className="text-3xl font-bold text-white mb-2">{formatCurrency(totalPayouts)}</div>
+                        <div className="flex items-center text-xs font-medium">
+                          <span className="text-[#00E676] flex items-center"><ArrowUpRight className="w-3 h-3 mr-0.5" /> +24.7%</span>
+                          <span className="text-gray-500 ml-1">vs last month</span>
+                        </div>
+                      </div>
+                      <div className="h-16 w-full mt-2 relative -bottom-1">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={sparklineData4}>
+                            <defs>
+                              <linearGradient id="colorSpark4" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#FFB300" stopOpacity={0.2} />
+                                <stop offset="95%" stopColor="#FFB300" stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <Area type="monotone" dataKey="value" stroke="#FFB300" strokeWidth={2} fillOpacity={1} fill="url(#colorSpark4)" isAnimationActive={false} />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="grid lg:grid-cols-2 gap-8">
-                    {isFarmer ? (
-                      <>
-                        {/* Farmer Advisory Widget */}
-                        <div className="bg-white rounded-3xl p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-hidden group">
-                          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-bima-lightGreen/20 to-transparent rounded-bl-full -z-10 group-hover:scale-110 transition-transform duration-700"></div>
-                          <div className="flex items-center gap-4 mb-4">
-                             <div className="p-3 bg-bima-green/20 rounded-2xl text-bima-green">
-                               <Leaf className="w-6 h-6" />
-                             </div>
-                             <h3 className="text-2xl font-black text-bima-darkGreen tracking-tight">Agricultural Advisory</h3>
-                          </div>
-                          <p className="text-[15px] font-semibold text-slate-500 mb-6 leading-relaxed">
-                            Weather systems indicate stable conditions. Satellite arrays are tracking H3 region cell: <span className="font-mono text-bima-darkGreen bg-slate-100 px-2 py-0.5 rounded font-bold">{policies[0]?.coverage_h3 || '8928308280fffff'}</span>.
-                          </p>
-                          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6">
-                            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Smart Recommendation</p>
-                            <p className="text-sm font-bold text-bima-darkGreen leading-relaxed">
-                              Keep weeding crop areas clean to maximize soil moisture retention. The regional rainfall index is within standard ranges.
-                            </p>
-                          </div>
+                  {/* Middle Section: Overview Chart & Traffic */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Main Overview Chart */}
+                    <div className="bg-[#141414] border border-[#2A2A2A] rounded-xl p-5 lg:col-span-2 flex flex-col">
+                      <div className="flex justify-between items-start mb-6">
+                        <div>
+                          <h2 className="text-lg font-bold text-white mb-1">Financial Overview</h2>
+                          <p className="text-sm text-gray-500">Monthly performance for the current year</p>
                         </div>
-
-                        {/* Smart Contract Protection Widget */}
-                        <div className="bg-gradient-to-br from-[#1B2B20] to-[#0f1812] rounded-3xl p-10 shadow-[0_20px_40px_rgba(27,43,32,0.3)] text-white relative overflow-hidden group">
-                          <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='3' cy='3' r='1.5' fill='%23ffffff'/%3E%3C/svg%3E\")", backgroundSize: "24px 24px" }}></div>
-                          <div className="absolute -top-20 -right-20 w-64 h-64 bg-bima-green/20 blur-[50px] rounded-full group-hover:bg-bima-green/30 transition-colors duration-700"></div>
-                          
-                          <div className="relative z-10 flex flex-col h-full justify-between">
-                            <div>
-                              <h3 className="text-2xl font-black text-white mb-2 tracking-tight flex items-center gap-3">
-                                <Shield className="w-6 h-6 text-bima-lightGreen" /> Blockchain Protected
-                              </h3>
-                              <p className="text-[15px] font-semibold text-white/60 mb-6">Automated verification & instant claims processing</p>
-                              
-                              <p className="text-sm font-bold text-slate-300 leading-relaxed mb-6">
-                                Your policy is bound to the BimaGrid smart contract. If weather data registers severe drought, payouts are instantly triggered to your phone number: <span className="font-mono text-white underline">{user?.profile?.phone_number || 'Registered M-Pesa'}</span>.
-                              </p>
-                            </div>
-                            
-                            <div className="pt-4 border-t border-white/10 flex items-center justify-between text-xs text-white/50 font-mono">
-                              <span>CONTRACT STATUS</span>
-                              <span className="text-emerald-400 font-bold tracking-widest flex items-center gap-1.5">
-                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span> ACTIVE
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        {/* Quick Action Widget */}
-                        <div className="bg-white rounded-3xl p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-hidden group">
-                          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-bima-lightGreen/20 to-transparent rounded-bl-full -z-10 group-hover:scale-110 transition-transform duration-700"></div>
-                          <div className="flex items-center gap-4 mb-4">
-                             <div className="p-3 bg-bima-yellow/20 rounded-2xl text-bima-yellow">
-                               <CloudRain className="w-6 h-6" />
-                             </div>
-                             <h3 className="text-2xl font-black text-bima-darkGreen tracking-tight">Simulate Weather</h3>
-                          </div>
-                          <p className="text-[15px] font-semibold text-slate-500 mb-8 max-w-sm leading-relaxed">
-                            Check satellite data for a specific farm region to verify policies and process immediate payouts.
-                          </p>
-                          <div className="flex flex-col sm:flex-row gap-4">
-                            <input
-                              className="w-full sm:max-w-[240px] px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-mono text-sm font-bold text-slate-700 focus:ring-2 focus:ring-bima-green focus:border-bima-green transition-all placeholder:text-slate-400 shadow-inner"
-                              value={evaluationH3}
-                              onChange={(e) => setEvaluationH3(e.target.value)}
-                              placeholder="e.g. 8928308280fffff"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => void handleTriggerEvaluation()}
-                              disabled={isEvaluating || !evaluationH3}
-                              className="btn-primary sm:flex-1 shadow-[0_4px_14px_rgba(101,154,95,0.3)] hover:shadow-[0_6px_20px_rgba(101,154,95,0.4)] hover:-translate-y-0.5 py-4 px-6"
+                        <div className="flex items-center bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg p-1">
+                          {['Premium', 'Plans', 'Payouts'].map(tab => (
+                            <button 
+                              key={tab}
+                              onClick={() => setChartTab(tab)}
+                              className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-colors ${chartTab === tab ? 'bg-[#1A1A1A] text-white shadow-sm' : 'text-gray-500 hover:text-white'}`}
                             >
-                              {isEvaluating ? (
-                                <><RefreshCw className="w-5 h-5 mr-2 animate-spin" /> Checking…</>
-                              ) : (
-                                <><Activity className="w-5 h-5 mr-2" /> Verify Satellite Data</>
-                              )}
+                              {tab}
                             </button>
-                          </div>
+                          ))}
                         </div>
-
-                        {/* System Health Widget */}
-                        <div className="bg-gradient-to-br from-[#1B2B20] to-[#0f1812] rounded-3xl p-10 shadow-[0_20px_40px_rgba(27,43,32,0.3)] text-white relative overflow-hidden group">
-                          <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='3' cy='3' r='1.5' fill='%23ffffff'/%3E%3C/svg%3E\")", backgroundSize: "24px 24px" }}></div>
-                          <div className="absolute -top-20 -right-20 w-64 h-64 bg-bima-green/20 blur-[50px] rounded-full group-hover:bg-bima-green/30 transition-colors duration-700"></div>
-                          
-                          <div className="flex flex-wrap justify-between items-start gap-4 mb-10 relative z-10">
-                            <div>
-                              <h3 className="text-2xl font-black text-white mb-2 tracking-tight flex items-center gap-3">
-                                <Server className="w-6 h-6 text-bima-lightGreen" /> System Health
-                              </h3>
-                              <p className="text-[15px] font-semibold text-white/60">Live backend connectivity and API status</p>
-                            </div>
-                            {health ? (
-                              <div className="px-4 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-black tracking-widest flex items-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
-                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_10px_rgba(16,185,129,1)]"></span>
-                                ONLINE
-                              </div>
-                            ) : (
-                              <div className="px-4 py-2 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-black tracking-widest flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full bg-red-400"></span>
-                                OFFLINE
-                              </div>
-                            )}
-                          </div>
-                          <div className="grid grid-cols-2 gap-5 relative z-10">
-                            <div className="bg-white/5 rounded-[20px] p-6 border border-white/10 backdrop-blur-md hover:bg-white/10 transition-colors">
-                              <p className="text-[11px] font-black uppercase tracking-widest text-white/50 mb-2">Platform Version</p>
-                              <p className="text-2xl font-mono font-bold text-white">{health?.version ?? '—'}</p>
-                            </div>
-                            <div className="bg-white/5 rounded-[20px] p-6 border border-white/10 backdrop-blur-md hover:bg-white/10 transition-colors">
-                              <p className="text-[11px] font-black uppercase tracking-widest text-white/50 mb-2">Active Protocols</p>
-                              <p className="text-2xl font-mono font-bold text-bima-yellow">4 Modules</p>
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-
-              {activeTab === 'farmers' && (
-                <motion.div key="farmers" variants={tabVariants} initial="initial" animate="animate" exit="exit">
-                  <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
-                    <div className="p-8 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                      <div>
-                        <h2 className="text-2xl font-black text-bima-darkGreen tracking-tight">
-                          {isFarmer ? 'My Crop Insurance Policies' : 'Farmer & Plan Records'}
-                        </h2>
-                        <p className="text-[15px] font-semibold text-slate-500 mt-2 max-w-md leading-relaxed">
-                          {isFarmer ? 'A comprehensive history of your crop protection plans and active coverage.' : 'Complete directory of all farmers registered under your active agent account.'}
-                        </p>
                       </div>
                       
-                      <div className="flex flex-col sm:flex-row items-center gap-4 shrink-0">
-                        <div className="relative w-full sm:w-80">
-                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <Search className="h-5 w-5 text-slate-400" />
+                      <div className="flex-1 min-h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={overviewData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id="colorOverview" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#00E676" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="#00E676" stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12 }} dy={10} />
+                            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12 }} tickFormatter={(value) => chartTab === 'Plans' ? value : `$${value/1000}k`} />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#2A2A2A" />
+                            <Tooltip 
+                              contentStyle={{ backgroundColor: '#1A1A1A', borderColor: '#2A2A2A', borderRadius: '8px', color: '#FFF' }}
+                              itemStyle={{ color: '#00E676', fontWeight: 'bold' }}
+                            />
+                            <Area type="monotone" dataKey={chartTab.toLowerCase()} stroke="#00E676" strokeWidth={3} fillOpacity={1} fill="url(#colorOverview)" />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    {/* Traffic Sources & Monthly Goals */}
+                    <div className="flex flex-col gap-6">
+                      {/* Crop Distribution Donut */}
+                      <div className="bg-[#141414] border border-[#2A2A2A] rounded-xl p-5 flex-1 flex flex-col">
+                        <h2 className="text-lg font-bold text-white mb-1">Crop Distribution</h2>
+                        <p className="text-sm text-gray-500 mb-6">Percentage of insured crops</p>
+                        
+                        <div className="flex items-center justify-between flex-1">
+                          <div className="w-1/2 h-[160px] relative">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={cropData}
+                                  cx="50%"
+                                  cy="50%"
+                                  innerRadius={50}
+                                  outerRadius={70}
+                                  stroke="none"
+                                  paddingAngle={5}
+                                  dataKey="value"
+                                >
+                                  {cropData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                  ))}
+                                </Pie>
+                              </PieChart>
+                            </ResponsiveContainer>
+                            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center mt-1">
+                              <div className="text-xl font-bold text-white">100%</div>
+                              <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider">Total</div>
+                            </div>
                           </div>
-                          <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search by Plan ID, Crop..."
-                            className="block w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-bima-green focus:border-bima-green transition-all placeholder:text-slate-400 shadow-inner"
-                          />
+                          
+                          <div className="w-1/2 pl-4 flex flex-col gap-3">
+                            {cropData.map(item => (
+                              <div key={item.name} className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></div>
+                                  <span className="text-xs text-gray-400 font-medium">{item.name}</span>
+                                </div>
+                                <span className="text-xs text-white font-bold">{item.value}%</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3 w-full sm:w-auto">
-                          <span className="px-5 py-3.5 rounded-2xl bg-bima-lightGreen/20 text-bima-darkGreen font-black text-sm border border-bima-lightGreen/50 shrink-0">
-                            {policies.length} Plans
-                          </span>
-                          {!isFarmer && (
-                            <button onClick={() => setIsRegisterModalOpen(true)} className="btn-primary py-3.5 px-6 text-sm shadow-[0_4px_14px_rgba(101,154,95,0.3)] hover:-translate-y-0.5 whitespace-nowrap">
-                              <Users className="w-4 h-4 mr-2" /> New Farmer
-                            </button>
-                          )}
+                      </div>
+
+                      {/* Monthly Goals */}
+                      <div className="bg-[#141414] border border-[#2A2A2A] rounded-xl p-5">
+                        <h2 className="text-lg font-bold text-white mb-1">Monthly Goals</h2>
+                        <p className="text-sm text-gray-500 mb-6">Track progress toward targets</p>
+                        
+                        <div className="flex flex-col gap-5">
+                          <div>
+                            <div className="flex justify-between items-end mb-2">
+                              <span className="text-xs font-bold text-white">Premium Targets</span>
+                              <span className="text-xs font-bold text-gray-500">88%</span>
+                            </div>
+                            <div className="w-full bg-[#0A0A0A] rounded-full h-2 mb-1 border border-[#2A2A2A]">
+                              <div className="bg-[#00E676] h-full rounded-full" style={{ width: '88%' }}></div>
+                            </div>
+                            <div className="flex justify-between items-center text-[10px] text-gray-500">
+                              <span>{formatCurrency(totalPremium)}</span>
+                              <span>Target: KES 1M</span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <div className="flex justify-between items-end mb-2">
+                              <span className="text-xs font-bold text-white">New Farmers</span>
+                              <span className="text-xs font-bold text-gray-500">85%</span>
+                            </div>
+                            <div className="w-full bg-[#0A0A0A] rounded-full h-2 mb-1 border border-[#2A2A2A]">
+                              <div className="bg-[#00BCD4] h-full rounded-full" style={{ width: '85%' }}></div>
+                            </div>
+                            <div className="flex justify-between items-center text-[10px] text-gray-500">
+                              <span>{farmerRecords.length}</span>
+                              <span>Target: 50</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
- 
-                    {filteredPolicies.length === 0 ? (
-                      <div className="p-20 flex flex-col items-center justify-center text-center bg-slate-50/30">
-                        <div className="h-24 w-24 rounded-[2rem] bg-white flex items-center justify-center mb-8 border border-slate-100 shadow-sm">
-                          <Database className="h-10 w-10 text-slate-300" />
+                  </div>
+
+                  {/* Bottom Section: Recent Policies & Activity */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-12">
+                    {/* Recent Orders Table -> Recent Policies */}
+                    <div className="bg-[#141414] border border-[#2A2A2A] rounded-xl p-5 lg:col-span-2">
+                      <div className="flex justify-between items-start mb-6">
+                        <div>
+                          <h2 className="text-lg font-bold text-white mb-1">Recent Policies</h2>
+                          <p className="text-sm text-gray-500">Latest active plans from your farmers</p>
                         </div>
-                        <h3 className="text-xl font-black text-slate-700 tracking-tight">
-                          {searchQuery ? 'No matching records found' : 'No records found'}
-                        </h3>
-                        <p className="text-[15px] font-semibold text-slate-500 mt-3 max-w-md leading-relaxed">
-                          {searchQuery 
-                            ? `We couldn't find any plans matching "${searchQuery}". Try adjusting your search term.` 
-                            : (isFarmer ? "You don't have any crop insurance policies registered at the moment. Please contact an agent to get started." : "You haven't registered any farmers or farm plans yet. Click the button above to get started.")}
-                        </p>
+                        <button onClick={() => setActiveTab('farmers')} className="text-[#00E676] text-sm font-semibold flex items-center gap-1 hover:text-[#00c968] transition-colors">
+                          View all <ArrowUpRight className="w-4 h-4" />
+                        </button>
                       </div>
-                    ) : (
+
                       <div className="overflow-x-auto">
-                        <table className="min-w-full text-left text-sm whitespace-nowrap">
+                        <table className="w-full text-left border-collapse">
                           <thead>
-                            <tr className="bg-slate-50 border-b border-slate-100">
-                              <th className="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Plan ID</th>
-                              {!isFarmer && <th className="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Farmer</th>}
-                              <th className="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Crop Protection</th>
-                              <th className="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Region Code</th>
-                              <th className="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Premium</th>
-                              <th className="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Coverage Window</th>
-                              <th className="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                            <tr className="border-b border-[#2A2A2A] text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                              <th className="pb-3 px-2 font-medium">Farmer</th>
+                              <th className="pb-3 px-2 font-medium">Policy ID</th>
+                              <th className="pb-3 px-2 font-medium">Crop</th>
+                              <th className="pb-3 px-2 font-medium">Status</th>
+                              <th className="pb-3 px-2 text-right font-medium">Premium</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-100">
-                            {filteredPolicies.map((policy) => (
-                              <tr key={policy.id} onClick={() => setSelectedPolicyForDetail(policy)} className="hover:bg-slate-50 cursor-pointer transition-colors group">
-                                <td className="px-8 py-6 font-black text-bima-darkGreen text-[15px]">{policy.policy_number}</td>
-                                {!isFarmer && (
-                                  <td className="px-8 py-6 font-bold text-slate-800 text-[14px]">
-                                    {policy.farmer_name || 'Jane Doe'}
-                                  </td>
-                                )}
-                                <td className="px-8 py-6 capitalize text-slate-600 font-bold flex items-center gap-3">
-                                  <span className="w-2.5 h-2.5 rounded-full bg-bima-green shadow-[0_0_10px_rgba(101,154,95,0.4)]"></span>
-                                  {policy.crop}
+                          <tbody className="text-sm">
+                            {policies.slice(0, 5).map((policy, idx) => (
+                              <tr key={idx} onClick={() => setSelectedPolicyForDetail(policy)} className="border-b border-[#2A2A2A] last:border-none hover:bg-[#1A1A1A] cursor-pointer transition-colors">
+                                <td className="py-4 px-2">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-black bg-[#00E676]">
+                                      {policy.farmer_name?.charAt(0) || 'F'}
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span className="text-white font-semibold">{policy.farmer_name || 'Farmer Name'}</span>
+                                      <span className="text-gray-500 text-xs">{policy.farmer_phone || 'N/A'}</span>
+                                    </div>
+                                  </div>
                                 </td>
-                                <td className="px-8 py-6 font-mono text-[11px] font-black text-slate-500">
-                                  <span className="bg-white px-3 py-1.5 rounded-lg border border-slate-200 group-hover:border-slate-300 transition-colors">{policy.coverage_h3}</span>
-                                </td>
-                                <td className="px-8 py-6 font-black text-bima-darkGreen text-lg">{formatCurrency(policy.premium_amount)}</td>
-                                <td className="px-8 py-6 text-slate-500 font-semibold text-xs">
-                                  {formatDate(policy.coverage_start)} <span className="mx-2 text-slate-300">to</span> {formatDate(policy.coverage_end)}
-                                </td>
-                                <td className="px-8 py-6">
+                                <td className="py-4 px-2 text-gray-400 font-mono text-xs">{policy.policy_number}</td>
+                                <td className="py-4 px-2 text-white font-medium capitalize">{policy.crop}</td>
+                                <td className="py-4 px-2">
                                   <StatusBadge status={policy.status} />
                                 </td>
+                                <td className="py-4 px-2 text-right text-white font-bold">{formatCurrency(policy.premium_amount)}</td>
                               </tr>
                             ))}
                           </tbody>
                         </table>
                       </div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-
-              {activeTab === 'claims' && (
-                <motion.div key="claims" variants={tabVariants} initial="initial" animate="animate" exit="exit" className="grid lg:grid-cols-2 gap-8">
-                  {/* Recent Claims */}
-                  <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden flex flex-col relative group">
-                    <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-bima-yellow/10 to-transparent rounded-bl-full -z-10 group-hover:scale-110 transition-transform duration-700"></div>
-                    <div className="p-8 border-b border-slate-100 flex items-center justify-between">
-                      <h2 className="text-2xl font-black text-bima-darkGreen flex items-center gap-3 tracking-tight">
-                        <div className="p-2.5 bg-bima-yellow/20 rounded-xl text-bima-yellow">
-                           <AlertCircle className="w-5 h-5" />
-                        </div>
-                        Loss Claims
-                      </h2>
-                      <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{claims.length} Records</span>
                     </div>
-                    {claims.length === 0 ? (
-                      <div className="p-20 flex-1 flex flex-col items-center justify-center text-center">
-                        <div className="h-20 w-20 rounded-[2rem] bg-slate-50 flex items-center justify-center mb-6 border border-slate-100">
-                          <FileText className="h-8 w-8 text-slate-300" />
+
+                    {/* Recent Activity Timeline */}
+                    <div className="bg-[#141414] border border-[#2A2A2A] rounded-xl p-5">
+                      <div className="flex justify-between items-start mb-6">
+                        <div>
+                          <h2 className="text-lg font-bold text-white mb-1">Recent Activity</h2>
+                          <p className="text-sm text-gray-500">Latest events from the platform</p>
                         </div>
-                        <p className="text-[15px] font-bold text-slate-500">No claims recorded yet.</p>
                       </div>
-                    ) : (
-                      <ul className="divide-y divide-slate-100 bg-white/50 backdrop-blur-md">
-                        {claims.map((claim) => (
-                          <li key={claim.id} className="flex items-center justify-between gap-4 p-8 hover:bg-slate-50 transition-colors">
-                            <div>
-                              <p className="font-black text-bima-darkGreen text-xl tracking-tight">{claim.claim_number}</p>
-                              <p className="text-[13px] font-bold capitalize text-slate-500 mt-2 flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 rounded-full bg-bima-yellow"></span>
-                                {claim.loss_type}
-                              </p>
-                              <p className="text-[11px] font-black text-slate-400 mt-2 tracking-widest uppercase">{formatDate(claim.created_at)}</p>
-                            </div>
-                            <div className="text-right flex flex-col items-end">
-                              <p className="font-black text-bima-darkGreen text-2xl mb-3 tracking-tighter">{formatCurrency(claim.claimed_amount)}</p>
-                              <StatusBadge status={claim.status} />
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
 
-                  {/* Recent Payouts */}
-                  <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden flex flex-col relative group">
-                    <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-[#659A5F]/10 to-transparent rounded-bl-full -z-10 group-hover:scale-110 transition-transform duration-700"></div>
-                    <div className="p-8 border-b border-slate-100 flex items-center justify-between">
-                      <h2 className="text-2xl font-black text-bima-darkGreen flex items-center gap-3 tracking-tight">
-                        <div className="p-2.5 bg-[#659A5F]/20 rounded-xl text-[#659A5F]">
-                           <ArrowUpRight className="w-5 h-5" />
-                        </div>
-                        M-Pesa Payouts
-                      </h2>
-                      <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{payouts.length} Transfers</span>
-                    </div>
-                    {payouts.length === 0 ? (
-                      <div className="p-20 flex-1 flex flex-col items-center justify-center text-center">
-                        <div className="h-20 w-20 rounded-[2rem] bg-slate-50 flex items-center justify-center mb-6 border border-slate-100">
-                          <Banknote className="h-8 w-8 text-slate-300" />
-                        </div>
-                        <p className="text-[15px] font-bold text-slate-500">No payouts dispatched yet.</p>
-                      </div>
-                    ) : (
-                      <ul className="divide-y divide-slate-100 bg-white/50 backdrop-blur-md">
-                        {payouts.map((payout) => (
-                          <li key={payout.id} className="flex items-center justify-between gap-4 p-8 hover:bg-slate-50 transition-colors">
-                            <div>
-                              <p className="font-black text-bima-darkGreen text-3xl tracking-tighter">{formatCurrency(payout.amount)}</p>
-                              <p className="text-[15px] font-bold text-slate-500 mt-2">{payout.phone_number}</p>
-                              <div className="inline-block px-3 py-1.5 bg-slate-100 rounded-lg mt-3 border border-slate-200">
-                                <p className="font-mono text-[10px] font-black text-slate-500 uppercase">REF: {payout.reference}</p>
-                              </div>
-                            </div>
-                            <div className="text-right flex flex-col items-end">
-                              <StatusBadge status={payout.status} />
-                              <p className="mt-4 text-[11px] font-black text-slate-400 tracking-widest uppercase">{formatDate(payout.created_at)}</p>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-
-              {activeTab === 'system' && (
-                <motion.div key="system" variants={tabVariants} initial="initial" animate="animate" exit="exit" className="max-w-4xl">
-                  <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden relative">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-bima-lightGreen/10 to-transparent rounded-bl-full -z-10"></div>
-                    <div className="p-8 md:p-10">
-                      <h2 className="text-2xl font-black text-bima-darkGreen flex items-center gap-3 mb-10 tracking-tight">
-                        <div className="p-3 bg-bima-lightGreen/20 rounded-xl text-bima-green">
-                          <Settings className="w-6 h-6" />
-                        </div>
-                        Administrator Tools
-                      </h2>
-
-                      <div className="space-y-6">
-                        <div className="p-8 rounded-[24px] border border-slate-200 bg-slate-50 flex flex-col sm:flex-row items-start gap-6 hover:shadow-md transition-shadow">
-                          <div className="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 shrink-0">
-                            <Activity className="w-7 h-7 text-bima-green" />
+                      <div className="flex flex-col gap-6 relative">
+                        <div className="absolute left-4 top-4 bottom-4 w-px bg-[#2A2A2A] -z-0"></div>
+                        
+                        <div className="flex gap-4 relative z-10">
+                          <div className="w-8 h-8 rounded-full bg-[#00E676]/10 flex items-center justify-center flex-shrink-0 mt-1 border border-[#00E676]/20">
+                            <Shield className="w-4 h-4 text-[#00E676]" />
                           </div>
-                          <div className="flex-1">
-                            <h3 className="font-black text-bima-darkGreen text-xl tracking-tight">Manual Weather Evaluation</h3>
-                            <p className="text-[15px] text-slate-500 font-medium mt-2 mb-6 max-w-lg leading-relaxed">Force trigger an immediate satellite data check for a specific H3 Region Code index.</p>
-                            <div className="flex flex-col sm:flex-row gap-4">
-                              <input
-                                className="input-field font-mono text-sm max-w-[280px] bg-white border-slate-200 shadow-inner px-5 py-4 rounded-2xl"
-                                value={evaluationH3}
-                                onChange={(e) => setEvaluationH3(e.target.value)}
-                                placeholder="Region Code"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => void handleTriggerEvaluation()}
-                                disabled={isEvaluating || !evaluationH3}
-                                className="btn-primary text-sm px-8 py-4 shadow-[0_4px_14px_rgba(101,154,95,0.3)] hover:-translate-y-0.5"
-                              >
-                                Execute Check
-                              </button>
-                            </div>
+                          <div className="flex flex-col">
+                            <span className="text-white font-bold text-sm">Policy Activated</span>
+                            <span className="text-gray-400 text-xs mt-0.5 leading-snug">Wycliff secured 3 Acres of Maize</span>
+                            <span className="text-gray-600 text-xs mt-1">2 min ago</span>
                           </div>
                         </div>
 
-                        {isAdmin && (
-                          <div className="p-8 rounded-[24px] border border-bima-yellow/40 bg-gradient-to-br from-bima-yellow/10 to-bima-yellow/5 flex flex-col sm:flex-row items-start gap-6 hover:shadow-md transition-shadow">
-                            <div className="p-4 bg-white rounded-2xl shadow-sm border border-bima-yellow/20 shrink-0">
-                              <CloudLightning className="w-7 h-7 text-bima-yellow" />
-                            </div>
-                            <div className="flex-1">
-                              <h3 className="font-black text-bima-darkGreen text-xl tracking-tight">Simulate Weather Event</h3>
-                              <p className="text-[15px] text-slate-600 font-medium mt-2 mb-6 max-w-lg leading-relaxed">Force a severe drought simulation in a region to test the automated mobile money payouts system end-to-end.</p>
-                              <button
-                                type="button"
-                                onClick={() => void handleSimulateDrought()}
-                                disabled={!evaluationH3}
-                                className="btn-outline border-bima-yellow text-bima-darkGreen hover:bg-bima-yellow hover:text-bima-darkGreen text-[15px] font-bold px-8 py-4 bg-white shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5"
-                              >
-                                Simulate Drought for {evaluationH3 || 'Region'}
-                              </button>
-                            </div>
+                        <div className="flex gap-4 relative z-10">
+                          <div className="w-8 h-8 rounded-full bg-[#00BCD4]/10 flex items-center justify-center flex-shrink-0 mt-1 border border-[#00BCD4]/20">
+                            <UserPlus className="w-4 h-4 text-[#00BCD4]" />
                           </div>
-                        )}
+                          <div className="flex flex-col">
+                            <span className="text-white font-bold text-sm">New farmer registered</span>
+                            <span className="text-gray-400 text-xs mt-0.5 leading-snug">Odiambo created an account</span>
+                            <span className="text-gray-600 text-xs mt-1">15 min ago</span>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-4 relative z-10">
+                          <div className="w-8 h-8 rounded-full bg-[#FFB300]/10 flex items-center justify-center flex-shrink-0 mt-1 border border-[#FFB300]/20">
+                            <CloudRain className="w-4 h-4 text-[#FFB300]" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-white font-bold text-sm">Weather Check Executed</span>
+                            <span className="text-gray-400 text-xs mt-0.5 leading-snug">Satellite scan on H3 index 89283...</span>
+                            <span className="text-gray-600 text-xs mt-1">1 hour ago</span>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-4 relative z-10">
+                          <div className="w-8 h-8 rounded-full bg-[#2196F3]/10 flex items-center justify-center flex-shrink-0 mt-1 border border-[#2196F3]/20">
+                            <Banknote className="w-4 h-4 text-[#2196F3]" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-white font-bold text-sm">Premium received</span>
+                            <span className="text-gray-400 text-xs mt-0.5 leading-snug">KES 1,062 from Wycliff</span>
+                            <span className="text-gray-600 text-xs mt-1">2 hours ago</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </motion.div>
               )}
-              
+
+              {/* Farmers & Plans Tab (Matches dark theme) */}
+              {activeTab === 'farmers' && (
+                <motion.div key="farmers" variants={tabVariants} initial="initial" animate="animate" exit="exit">
+                   <div className="bg-[#141414] rounded-xl border border-[#2A2A2A] overflow-hidden">
+                      <div className="p-6 border-b border-[#2A2A2A] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                          <h2 className="text-xl font-bold text-white mb-1">Farmers & Plans Directory</h2>
+                          <p className="text-sm text-gray-500">View all registered policy contracts.</p>
+                        </div>
+                        <div className="flex items-center gap-4 w-full sm:w-auto">
+                          <div className="relative w-full sm:w-64">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                            <input 
+                              type="text" 
+                              value={searchQuery}
+                              onChange={(e) => setSearchQuery(e.target.value)}
+                              placeholder="Search..." 
+                              className="w-full bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#00E676] transition-colors"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-[#1A1A1A] border-b border-[#2A2A2A] text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                              <th className="py-3 px-6 font-medium">Plan ID</th>
+                              {!isFarmer && <th className="py-3 px-6 font-medium">Farmer</th>}
+                              <th className="py-3 px-6 font-medium">Crop Protection</th>
+                              <th className="py-3 px-6 font-medium">Region Code</th>
+                              <th className="py-3 px-6 font-medium">Premium</th>
+                              <th className="py-3 px-6 font-medium">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="text-sm">
+                            {filteredPolicies.map((policy) => (
+                              <tr key={policy.id} onClick={() => setSelectedPolicyForDetail(policy)} className="border-b border-[#2A2A2A] last:border-none hover:bg-[#1A1A1A] cursor-pointer transition-colors">
+                                <td className="py-4 px-6 text-gray-400 font-mono text-xs">{policy.policy_number}</td>
+                                {!isFarmer && <td className="py-4 px-6 text-white font-semibold">{policy.farmer_name || 'Jane Doe'}</td>}
+                                <td className="py-4 px-6 text-white font-medium capitalize">{policy.crop}</td>
+                                <td className="py-4 px-6 text-gray-500 font-mono text-xs">{policy.coverage_h3}</td>
+                                <td className="py-4 px-6 text-white font-bold">{formatCurrency(policy.premium_amount)}</td>
+                                <td className="py-4 px-6"><StatusBadge status={policy.status} /></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                   </div>
+                </motion.div>
+              )}
+
+              {/* Weather Analytics Tab (Adapted to dark theme) */}
               {activeTab === 'weather' && (
-                <motion.div key="weather" variants={tabVariants} initial="initial" animate="animate" exit="exit" className="space-y-8">
-                  <div className="bg-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
-                    <h3 className="text-xl font-extrabold text-bima-darkGreen mb-2 flex items-center gap-2">
-                      <CloudRain className="w-5 h-5 text-bima-green" /> Regional Spatial Grid Analysis
+                <motion.div key="weather" variants={tabVariants} initial="initial" animate="animate" exit="exit" className="space-y-6">
+                  <div className="bg-[#141414] rounded-xl p-6 border border-[#2A2A2A]">
+                    <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
+                      <CloudRain className="w-5 h-5 text-[#00E676]" /> Spatial Grid Analysis
                     </h3>
-                    <p className="text-sm text-slate-500 font-medium mb-6">
-                      Query real-time meteorological indexes and NDVI baseline metrics for any H3 grid cell.
+                    <p className="text-sm text-gray-500 mb-6">
+                      Query real-time meteorological indexes for any H3 grid cell.
                     </p>
                     
                     <div className="flex flex-col sm:flex-row gap-4 max-w-xl">
                       <input
-                        className="input-field font-mono text-sm py-3 px-5 rounded-2xl flex-1 border-slate-200"
+                        className="flex-1 bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg px-4 py-2 text-sm text-white font-mono placeholder-gray-600 focus:outline-none focus:border-[#00E676] transition-colors"
                         value={weatherSearchH3}
                         onChange={(e) => setWeatherSearchH3(e.target.value)}
-                        placeholder="Enter H3 Grid Index (e.g. 8928308280fffff)"
+                        placeholder="H3 Grid Index (e.g. 8928308280fffff)"
                       />
                       <button
                         type="button"
                         onClick={() => void handleQueryWeather()}
                         disabled={weatherAnalysis.loading}
-                        className="btn-primary py-3 px-6 text-sm flex items-center justify-center gap-2"
+                        className="bg-[#00E676] hover:bg-[#00c968] text-black px-6 py-2 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-2"
                       >
-                        {weatherAnalysis.loading ? (
-                          <><RefreshCw className="w-4 h-4 animate-spin" /> Querying...</>
-                        ) : (
-                          <><Search className="w-4 h-4" /> Analyze Grid</>
-                        )}
+                        {weatherAnalysis.loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                        Analyze Grid
                       </button>
                     </div>
                   </div>
 
-                  {/* Weather Metrics display */}
-                  <div className="grid md:grid-cols-3 gap-6">
-                    {/* Card 1: NDVI */}
-                    <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
-                      <div>
-                        <div className="w-10 h-10 rounded-[10px] bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
-                          <Leaf className="w-5 h-5" />
-                        </div>
-                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">NDVI Metric</p>
-                        <p className="text-2xl font-black text-slate-800 mt-2 font-mono">
-                          {weatherAnalysis.ndvi !== null ? weatherAnalysis.ndvi.toFixed(2) : '—'}
-                        </p>
-                      </div>
-                      <div className="mt-6 border-t border-slate-50 pt-4 text-xs font-bold">
-                        {weatherAnalysis.ndvi !== null ? (
-                          weatherAnalysis.ndvi >= 0.5 ? (
-                            <span className="text-emerald-500">🟢 Healthy Crop Vegetation</span>
-                          ) : weatherAnalysis.ndvi >= 0.35 ? (
-                            <span className="text-yellow-500">🟡 Moderate Dry Stress</span>
-                          ) : (
-                            <span className="text-red-500">🔴 Severe Drought / Crop Damage</span>
-                          )
-                        ) : (
-                          <span className="text-slate-400">Perform analysis query</span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Card 2: Rainfall */}
-                    <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
-                      <div>
-                        <div className="w-10 h-10 rounded-[10px] bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
-                          <CloudRain className="w-5 h-5" />
-                        </div>
-                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Precipitation</p>
-                        <p className="text-2xl font-black text-slate-800 mt-2 font-mono">
-                          {weatherAnalysis.rainfall !== null ? `${weatherAnalysis.rainfall.toFixed(1)} mm` : '—'}
-                        </p>
-                      </div>
-                      <div className="mt-6 border-t border-slate-50 pt-4 text-xs font-bold">
-                        {weatherAnalysis.rainfall !== null ? (
-                          weatherAnalysis.rainfall > 10 ? (
-                            <span className="text-emerald-500">🟢 Adequate Rainfall</span>
-                          ) : (
-                            <span className="text-red-500">🔴 Low Precipitation (Triggers Payout)</span>
-                          )
-                        ) : (
-                          <span className="text-slate-400">Perform analysis query</span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Card 3: Soil Moisture */}
-                    <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
-                      <div>
-                        <div className="w-10 h-10 rounded-[10px] bg-amber-50 text-amber-600 flex items-center justify-center mb-4">
-                          <Tractor className="w-5 h-5" />
-                        </div>
-                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Soil Moisture</p>
-                        <p className="text-2xl font-black text-slate-800 mt-2 font-mono">
-                          {weatherAnalysis.ndvi !== null ? `${(weatherAnalysis.ndvi * 40).toFixed(0)}%` : '—'}
-                        </p>
-                      </div>
-                      <div className="mt-6 border-t border-slate-50 pt-4 text-xs font-bold">
-                        {weatherAnalysis.ndvi !== null ? (
-                          weatherAnalysis.ndvi * 40 >= 20 ? (
-                            <span className="text-emerald-500">🟢 Normal Moisture Level</span>
-                          ) : (
-                            <span className="text-red-500">🔴 Severe Soil Drought</span>
-                          )
-                        ) : (
-                          <span className="text-slate-400">Perform analysis query</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* SVG Map grid mockup */}
-                  <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm flex flex-col items-center">
-                    <p className="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-6">Spatial H3 Hexagonal Layout Representation</p>
-                    <svg width="220" height="200" viewBox="0 0 220 200" className="opacity-90">
-                      {/* Hexagon 1: Top Left */}
-                      <polygon points="50,20 90,20 110,50 90,80 50,80 30,50" fill="#E2E8F0" stroke="#CBD5E1" strokeWidth="2" />
-                      {/* Hexagon 2: Top Right */}
-                      <polygon points="130,20 170,20 190,50 170,80 130,80 110,50" fill="#E2E8F0" stroke="#CBD5E1" strokeWidth="2" />
-                      {/* Hexagon 3: Center (Target) */}
-                      <polygon 
-                        points="90,75 130,75 150,105 130,135 90,135 70,105" 
-                        fill={weatherAnalysis.ndvi !== null ? (weatherAnalysis.ndvi >= 0.5 ? '#10B981' : weatherAnalysis.ndvi >= 0.35 ? '#F59E0B' : '#EF4444') : '#659A5F'} 
-                        stroke="#FFF" 
-                        strokeWidth="3" 
-                        className="transition-colors duration-500 shadow-lg"
-                      />
-                      {/* Hexagon 4: Bottom Left */}
-                      <polygon points="50,130 90,130 110,160 90,190 50,190 30,160" fill="#E2E8F0" stroke="#CBD5E1" strokeWidth="2" />
-                      {/* Hexagon 5: Bottom Right */}
-                      <polygon points="130,130 170,130 190,160 170,190 130,190 110,160" fill="#E2E8F0" stroke="#CBD5E1" strokeWidth="2" />
-                      
-                      <text x="110" y="110" textAnchor="middle" fill="#FFF" className="text-[10px] font-black font-mono">
-                        {weatherSearchH3 ? weatherSearchH3.substring(0, 7) : 'GRID'}
-                      </text>
-                    </svg>
-                    <div className="flex gap-4 mt-6 text-xs font-bold text-slate-500">
-                      <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-emerald-500"></span> Healthy</div>
-                      <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-amber-500"></span> Stressed</div>
-                      <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-red-500"></span> Dry / Drought</div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              {activeTab === 'resources' && (
-                <motion.div key="resources" variants={tabVariants} initial="initial" animate="animate" exit="exit" className="grid md:grid-cols-2 gap-8">
-                  {/* Documentation */}
-                  <div className="bg-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 space-y-6">
-                    <h3 className="text-xl font-extrabold text-bima-darkGreen flex items-center gap-2">
-                      <BookOpen className="w-5 h-5 text-bima-green" /> Agent Resource Hub
-                    </h3>
-                    <div className="relative">
-                      <input
-                        className="input-field pl-10 py-2.5 text-xs"
-                        placeholder="Search resource guidelines..."
-                        value={resourceSearch}
-                        onChange={(e) => setResourceSearch(e.target.value)}
-                      />
-                      <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                    </div>
-
-                    <div className="space-y-3">
-                      <a href="#" className="block p-4 bg-slate-50 hover:bg-bima-lightGreen/10 border border-slate-100 rounded-2xl transition-all">
-                        <p className="text-xs font-bold text-bima-darkGreen mb-1">📋 Parametric Crop Protection Guidelines</p>
-                        <p className="text-[10px] text-slate-400 font-medium">Standard baseline thresholds, crop choices, and H3 region index metrics.</p>
-                      </a>
-                      <a href="#" className="block p-4 bg-slate-50 hover:bg-bima-lightGreen/10 border border-slate-100 rounded-2xl transition-all">
-                        <p className="text-xs font-bold text-bima-darkGreen mb-1">🔗 Smart Contract Escrow Operations</p>
-                        <p className="text-[10px] text-slate-400 font-medium">How policy premiums are locked in decentralized vault escrows and paid out.</p>
-                      </a>
-                      <a href="#" className="block p-4 bg-slate-50 hover:bg-bima-lightGreen/10 border border-slate-100 rounded-2xl transition-all">
-                        <p className="text-xs font-bold text-bima-darkGreen mb-1">📱 USSD Farmer Portal User Guide</p>
-                        <p className="text-[10px] text-slate-400 font-medium">Steps for farmers to dial *384*123# to view status and request manual audit review.</p>
-                      </a>
-                    </div>
-                  </div>
-
-                  {/* Premium Calculator */}
-                  <div className="bg-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-xl font-extrabold text-bima-darkGreen mb-4 flex items-center gap-2">
-                        <Tractor className="w-5 h-5 text-bima-green" /> Premium Estimator
-                      </h3>
-                      <div className="space-y-4">
+                  <div className="grid lg:grid-cols-3 gap-6">
+                    {/* Metrics */}
+                    <div className="lg:col-span-1 space-y-6">
+                      <div className="bg-[#141414] rounded-xl p-5 border border-[#2A2A2A] flex flex-col justify-between h-36">
                         <div>
-                          <label className="block mb-1 text-xs font-bold text-slate-700">Acreage</label>
-                          <input
-                            type="number"
-                            className="input-field py-2.5 text-xs"
-                            value={calculatorAcreage}
-                            onChange={(e) => setCalculatorAcreage(e.target.value)}
-                          />
+                          <div className="flex justify-between items-start mb-2">
+                             <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">NDVI Metric</h3>
+                             <Leaf className="w-4 h-4 text-[#00BCD4]" />
+                          </div>
+                          <div className="text-3xl font-bold text-white">{weatherAnalysis.ndvi !== null ? weatherAnalysis.ndvi.toFixed(2) : '—'}</div>
                         </div>
+                        <div className="text-xs font-bold uppercase tracking-wider mt-auto pt-4 border-t border-[#2A2A2A]">
+                          {weatherAnalysis.ndvi !== null ? (
+                            weatherAnalysis.ndvi >= 0.5 ? <span className="text-[#00E676]">Healthy Canopy</span> : <span className="text-red-500">Drought Warning</span>
+                          ) : <span className="text-gray-600">Pending</span>}
+                        </div>
+                      </div>
+
+                      <div className="bg-[#141414] rounded-xl p-5 border border-[#2A2A2A] flex flex-col justify-between h-36">
                         <div>
-                          <label className="block mb-1 text-xs font-bold text-slate-700">Crop Type</label>
-                          <select
-                            className="input-field py-2.5 text-xs appearance-none bg-white"
-                            value={calculatorCrop}
-                            onChange={(e) => setCalculatorCrop(e.target.value)}
-                          >
-                            <option value="maize">Maize (KES 322 / Acre)</option>
-                            <option value="beans">Beans (KES 280 / Acre)</option>
-                            <option value="wheat">Wheat (KES 350 / Acre)</option>
-                            <option value="rice">Rice (KES 400 / Acre)</option>
-                          </select>
+                          <div className="flex justify-between items-start mb-2">
+                             <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Precipitation</h3>
+                             <CloudRain className="w-4 h-4 text-[#2196F3]" />
+                          </div>
+                          <div className="text-3xl font-bold text-white">{weatherAnalysis.rainfall !== null ? `${weatherAnalysis.rainfall.toFixed(1)} mm` : '—'}</div>
+                        </div>
+                        <div className="text-xs font-bold uppercase tracking-wider mt-auto pt-4 border-t border-[#2A2A2A]">
+                          {weatherAnalysis.rainfall !== null ? (
+                            weatherAnalysis.rainfall >= 20 ? <span className="text-[#00E676]">Adequate</span> : <span className="text-red-500">Deficit</span>
+                          ) : <span className="text-gray-600">Pending</span>}
                         </div>
                       </div>
                     </div>
 
-                    <div className="mt-8 bg-bima-lightGreen/10 border border-bima-green/10 rounded-2xl p-4 flex justify-between items-center">
-                      <div>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Estimated Premium</span>
-                        <p className="text-2xl font-black text-bima-darkGreen">
-                          {formatCurrency(parseFloat(calculatorAcreage || '0') * (calculatorCrop === 'maize' ? 322 : calculatorCrop === 'beans' ? 280 : calculatorCrop === 'wheat' ? 350 : 400))}
-                        </p>
+                    {/* Satellite Map */}
+                    <div className="lg:col-span-2 bg-[#141414] rounded-xl border border-[#2A2A2A] p-2 h-[310px] relative overflow-hidden">
+                      <div className="w-full h-full rounded-lg overflow-hidden relative">
+                         {/* Optional overlay to darken map to match dark theme */}
+                         <div className="absolute inset-0 bg-[#0A0A0A]/20 z-10 pointer-events-none mix-blend-multiply"></div>
+                         
+                         <MapcnMap 
+                           viewport={weatherViewport}
+                           onViewportChange={(vp) => setWeatherViewport(vp)}
+                           className="h-full w-full"
+                         >
+                           <MapControls position="bottom-right" />
+                           <MapMarker longitude={weatherViewport.center[0]} latitude={weatherViewport.center[1]} color="#00E676" />
+                         </MapcnMap>
                       </div>
-                      <span className="text-[10px] font-mono font-bold bg-white text-bima-darkGreen px-2.5 py-1 rounded-md border border-slate-200">
-                        180 Days Term
-                      </span>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-              
-              {activeTab === 'settings' && (
-                <motion.div key="settings" variants={tabVariants} initial="initial" animate="animate" exit="exit" className="max-w-2xl bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-8 sm:p-10 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-bima-green/10 to-transparent rounded-bl-full -z-10"></div>
-                  <h2 className="text-2xl font-black text-bima-darkGreen flex items-center gap-3 mb-8 tracking-tight">
-                    <div className="p-2.5 bg-bima-green/20 rounded-xl text-bima-green">
-                       <Sliders className="w-5 h-5" />
-                    </div>
-                    Profile Settings
-                  </h2>
-                  <div className="space-y-6">
-                    <div className="grid sm:grid-cols-2 gap-6">
-                      <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Full Name</p>
-                        <p className="text-lg font-bold text-bima-darkGreen">{user?.profile?.full_name || user?.username || '—'}</p>
-                      </div>
-                      <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Username</p>
-                        <p className="text-lg font-bold text-bima-darkGreen">{user?.username || '—'}</p>
-                      </div>
-                      <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Email Address</p>
-                        <p className="text-lg font-bold text-bima-darkGreen">{user?.email || '—'}</p>
-                      </div>
-                      <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Phone Number</p>
-                        <p className="text-lg font-bold text-bima-darkGreen">{user?.profile?.phone_number || '—'}</p>
-                      </div>
-                      <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Account Role</p>
-                        <p className="text-lg font-bold text-bima-darkGreen capitalize">{user?.profile?.role || 'Customer'}</p>
-                      </div>
-                      <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Preferred Language</p>
-                        <p className="text-lg font-bold text-bima-darkGreen">{user?.profile?.preferred_language === 'sw' ? 'Swahili (Kiswahili)' : 'English'}</p>
+                      <div className="absolute left-6 bottom-6 bg-[#0A0A0A]/90 backdrop-blur border border-[#2A2A2A] rounded px-2 py-1 text-[10px] font-mono text-gray-400 z-20">
+                        {weatherViewport.center[1].toFixed(4)}, {weatherViewport.center[0].toFixed(4)}
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Simulate Tool */}
+                  <div className="bg-[#1A1A1A] rounded-xl border border-red-900/50 p-6 flex flex-col sm:flex-row items-center gap-6">
+                     <div className="p-3 bg-red-500/10 rounded-lg text-red-500 shrink-0">
+                        <CloudLightning className="w-6 h-6" />
+                     </div>
+                     <div className="flex-1">
+                        <h3 className="text-base font-bold text-white mb-1">Simulate Drought Event</h3>
+                        <p className="text-sm text-gray-400">Trigger a simulated rainfall deficit on a specific grid to test the smart contract payouts.</p>
+                     </div>
+                     <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                        <input
+                          className="bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg px-4 py-2 text-sm text-white font-mono placeholder-gray-600 focus:outline-none focus:border-red-500"
+                          value={evaluationH3}
+                          onChange={(e) => setEvaluationH3(e.target.value)}
+                          placeholder="Region Code"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => void handleSimulateDrought()}
+                          disabled={!evaluationH3}
+                          className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap"
+                        >
+                          Trigger Escrow
+                        </button>
+                     </div>
+                  </div>
                 </motion.div>
               )}
+
             </AnimatePresence>
           </div>
         </main>
@@ -1046,135 +922,127 @@ export default function Dashboard() {
         onSuccess={() => void loadDashboard(true)}
       />
 
-      {/* Policy Detail Modal */}
+      {/* Policy Detail Slide Panel - Dark Theme */}
       {selectedPolicyForDetail && (
         <AnimatePresence>
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[100] flex justify-end overflow-hidden">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              className="absolute inset-0 bg-[#0A0A0A]/80 backdrop-blur-sm"
               onClick={() => setSelectedPolicyForDetail(null)}
             />
             
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white border border-slate-100 rounded-[1.5rem] p-6 sm:p-8 w-full max-w-2xl max-h-[85vh] overflow-y-auto relative z-10 shadow-2xl"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="relative w-full max-w-md md:max-w-lg h-full bg-[#141414] shadow-2xl flex flex-col border-l border-[#2A2A2A] z-10"
             >
-              <div className="absolute top-0 left-0 w-full h-2 bg-bima-green rounded-t-[1.5rem]" />
-              
-              <div className="flex justify-between items-start gap-4 mb-6 border-b border-slate-100 pb-4">
+              {/* Header */}
+              <div className="p-6 border-b border-[#2A2A2A] flex justify-between items-center bg-[#0A0A0A]">
                 <div>
-                  <span className="text-[10px] font-black bg-bima-lightGreen/50 text-bima-darkGreen px-2 py-0.5 rounded uppercase tracking-wider">
-                    Policy Plan File
+                  <span className="text-[10px] font-bold bg-[#00E676]/10 text-[#00E676] px-2 py-0.5 rounded uppercase tracking-wider border border-[#00E676]/20">
+                    Policy Document
                   </span>
-                  <h3 className="text-2xl font-black text-bima-darkGreen mt-1 tracking-tight">
+                  <h3 className="text-xl font-bold text-white mt-2 tracking-tight">
                     {selectedPolicyForDetail.policy_number}
                   </h3>
                 </div>
                 <button 
                   onClick={() => setSelectedPolicyForDetail(null)}
-                  className="p-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors"
+                  className="p-2 bg-[#1A1A1A] hover:bg-[#2A2A2A] rounded-lg text-gray-400 transition-colors border border-[#2A2A2A]"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="grid sm:grid-cols-2 gap-6 text-sm border-b border-slate-100 pb-6 mb-6">
-                <div>
-                  <span className="text-slate-400 font-bold text-xs uppercase tracking-wider">Farmer Full Name</span>
-                  <p className="font-extrabold text-slate-800 text-lg mt-1">{selectedPolicyForDetail.farmer_name || 'Jane Doe'}</p>
-                </div>
-                <div>
-                  <span className="text-slate-400 font-bold text-xs uppercase tracking-wider">Registered Phone</span>
-                  <p className="font-bold text-slate-800 text-lg mt-1">{selectedPolicyForDetail.farmer_phone || '—'}</p>
-                </div>
-                <div>
-                  <span className="text-slate-400 font-bold text-xs uppercase tracking-wider">Crop Category</span>
-                  <p className="font-bold text-slate-800 capitalize mt-1">{selectedPolicyForDetail.crop}</p>
-                </div>
-                <div>
-                  <span className="text-slate-400 font-bold text-xs uppercase tracking-wider">Land Acreage</span>
-                  <p className="font-bold text-slate-800 mt-1">{selectedPolicyForDetail.insured_acreage} Acres</p>
-                </div>
-                <div>
-                  <span className="text-slate-400 font-bold text-xs uppercase tracking-wider">Coverage Grid (H3 Index)</span>
-                  <p className="font-mono text-xs font-bold text-slate-700 bg-slate-50 px-2 py-1 rounded border border-slate-200 mt-1 inline-block">
-                    {selectedPolicyForDetail.coverage_h3}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-slate-400 font-bold text-xs uppercase tracking-wider">Premium Amount</span>
-                  <p className="font-black text-bima-darkGreen text-xl mt-1">{formatCurrency(selectedPolicyForDetail.premium_amount)}</p>
-                </div>
-                <div>
-                  <span className="text-slate-400 font-bold text-xs uppercase tracking-wider">Plan Term Dates</span>
-                  <p className="font-medium text-slate-600 mt-1">
-                    {formatDate(selectedPolicyForDetail.coverage_start)} to {formatDate(selectedPolicyForDetail.coverage_end)}
-                  </p>
-                </div>
-                <div>
-                  <span className="text-slate-400 font-bold text-xs uppercase tracking-wider">Blockchain Status</span>
-                  <span className="block mt-1"><StatusBadge status={selectedPolicyForDetail.status} /></span>
-                </div>
-
-                {/* Farmer Location Details */}
-                {(selectedPolicyForDetail.county_name || selectedPolicyForDetail.subcounty_name || selectedPolicyForDetail.constituency_name || selectedPolicyForDetail.ward_name) && (
-                  <div className="col-span-2 bg-slate-50 rounded-xl p-3 border border-slate-100 grid grid-cols-2 gap-3 text-xs mt-2">
+              {/* Scrollable Body */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                
+                {/* Farmer Info */}
+                <div className="bg-[#0A0A0A] border border-[#2A2A2A] rounded-xl p-5 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider block">County / Sub-county</span>
-                      <p className="font-extrabold text-bima-darkGreen mt-0.5">
-                        {selectedPolicyForDetail.county_name || '—'} / {selectedPolicyForDetail.subcounty_name || '—'}
-                      </p>
+                      <span className="text-gray-500 text-[10px] uppercase tracking-wider font-bold">Farmer Name</span>
+                      <p className="font-bold text-white text-sm mt-1">{selectedPolicyForDetail.farmer_name || 'Jane Doe'}</p>
                     </div>
                     <div>
-                      <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider block">Constituency / Ward</span>
-                      <p className="font-extrabold text-bima-darkGreen mt-0.5">
-                        {selectedPolicyForDetail.constituency_name || '—'} / {selectedPolicyForDetail.ward_name || '—'}
+                      <span className="text-gray-500 text-[10px] uppercase tracking-wider font-bold">Phone Number</span>
+                      <p className="font-bold text-white text-sm mt-1">{selectedPolicyForDetail.farmer_phone || '—'}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 text-[10px] uppercase tracking-wider font-bold">Crop Type</span>
+                      <p className="font-bold text-white text-sm capitalize mt-1">{selectedPolicyForDetail.crop}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 text-[10px] uppercase tracking-wider font-bold">Acreage</span>
+                      <p className="font-bold text-white text-sm mt-1">{selectedPolicyForDetail.insured_acreage} Acres</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Premium Details */}
+                <div className="bg-[#0A0A0A] border border-[#2A2A2A] rounded-xl p-5 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="text-gray-500 text-[10px] uppercase tracking-wider font-bold">Premium Amount</span>
+                      <p className="font-bold text-[#00E676] text-lg mt-1">{formatCurrency(selectedPolicyForDetail.premium_amount)}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-gray-500 text-[10px] uppercase tracking-wider font-bold">Region H3 Index</span>
+                      <p className="font-mono text-xs text-gray-300 bg-[#1A1A1A] px-2 py-1 rounded border border-[#2A2A2A] mt-1 inline-block">
+                        {selectedPolicyForDetail.coverage_h3}
                       </p>
                     </div>
                   </div>
-                )}
-              </div>
+                  <div className="border-t border-[#2A2A2A] pt-4 flex justify-between items-center">
+                    <div>
+                      <span className="text-gray-500 text-[10px] uppercase tracking-wider font-bold">Coverage Period</span>
+                      <p className="font-medium text-gray-300 text-xs mt-1">
+                        {formatDate(selectedPolicyForDetail.coverage_start)} - {formatDate(selectedPolicyForDetail.coverage_end)}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span className="block mt-1"><StatusBadge status={selectedPolicyForDetail.status} /></span>
+                    </div>
+                  </div>
+                </div>
 
-              {/* Policy Event History */}
-              <div className="space-y-4 mb-6">
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-400">Policy Lifecycle Events</h4>
-                <div className="relative border-l border-slate-100 pl-4 space-y-4">
-                  {selectedPolicyForDetail.events && selectedPolicyForDetail.events.length > 0 ? (
-                    selectedPolicyForDetail.events.map((evt, idx) => (
-                      <div key={idx} className="relative">
-                        <span className="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-bima-green border border-white" />
-                        <p className="text-xs font-black text-bima-darkGreen capitalize">{evt.event_type}</p>
-                        <p className="text-[10px] text-slate-400 font-mono mt-0.5">{formatDate(evt.created_at)}</p>
+                {/* Lifecycle */}
+                <div className="bg-[#0A0A0A] border border-[#2A2A2A] rounded-xl p-5 space-y-4">
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-500 border-b border-[#2A2A2A] pb-2">Blockchain Lifecycle</h4>
+                  <div className="relative border-l border-[#2A2A2A] pl-4 space-y-4 ml-2">
+                    {selectedPolicyForDetail.events && selectedPolicyForDetail.events.length > 0 ? (
+                      selectedPolicyForDetail.events.map((evt, idx) => (
+                        <div key={idx} className="relative">
+                          <span className="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-[#00E676]" />
+                          <p className="text-xs font-bold text-white capitalize">{evt.event_type}</p>
+                          <p className="text-[10px] text-gray-500 font-mono mt-1">{formatDate(evt.created_at)}</p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="relative">
+                        <span className="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-gray-600" />
+                        <p className="text-xs font-bold text-gray-400">Policy Draft Issued</p>
+                        <p className="text-[10px] text-gray-600 font-mono mt-1">{formatDate(selectedPolicyForDetail.created_at)}</p>
                       </div>
-                    ))
-                  ) : (
-                    <div className="relative">
-                      <span className="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-slate-300 border border-white" />
-                      <p className="text-xs font-black text-slate-600">Policy Draft Issued</p>
-                      <p className="text-[10px] text-slate-400 font-mono mt-0.5">{formatDate(selectedPolicyForDetail.created_at)}</p>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Documents Section */}
-              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-3">Verified Documents</h4>
-                <div className="grid sm:grid-cols-2 gap-3 text-xs">
-                  <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-100">
-                    <span className="font-semibold text-slate-700 truncate max-w-[150px]">Title_Deed_Signed.pdf</span>
-                    <button className="text-bima-green font-bold hover:underline">Download</button>
-                  </div>
-                  <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-100">
-                    <span className="font-semibold text-slate-700 truncate max-w-[150px]">ID_Verification.pdf</span>
-                    <button className="text-bima-green font-bold hover:underline">Download</button>
-                  </div>
-                </div>
+              {/* Action Footer */}
+              <div className="p-6 border-t border-[#2A2A2A] bg-[#0A0A0A] flex justify-end">
+                <button 
+                  type="button" 
+                  onClick={() => setSelectedPolicyForDetail(null)}
+                  className="bg-[#1A1A1A] border border-[#2A2A2A] hover:bg-[#2A2A2A] text-white py-2 px-6 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Close View
+                </button>
               </div>
             </motion.div>
           </div>

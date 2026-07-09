@@ -24,6 +24,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 			"role",
 			"preferred_language",
 			"is_phone_verified",
+			"requires_password_change",
 			"created_at",
 			"updated_at",
 		]
@@ -144,7 +145,7 @@ class RegistrationSerializer(serializers.Serializer):
 				from apps.pricing.engine import calculate_premium
 				from datetime import date, timedelta
 				
-				pricing = calculate_premium(crop.upper(), onboarding.acreage, h3_index, [])
+				pricing = calculate_premium(crop.upper(), onboarding.acreage, h3_index, [], None, profile.role == Profile.Role.COOP)
 				policy_data = {
 					"crop": crop.upper(),
 					"insured_acreage": onboarding.acreage,

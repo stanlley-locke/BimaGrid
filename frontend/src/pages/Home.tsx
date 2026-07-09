@@ -142,7 +142,7 @@ export default function Home() {
                 Protecting Kenya's Staple Food Supply
               </p>
               <div className="relative w-[150px] h-[80px] rounded-[1.25rem] overflow-hidden shadow-sm group cursor-pointer">
-                <img src="https://images.unsplash.com/photo-1592982537447-7440770cbfc9?q=80&w=400&auto=format&fit=crop" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Tractor" />
+                <img src="/images/kenya_maize_farm_1783596979799.png" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Tractor" />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/20 transition-colors">
                   <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md">
                      <Play className="w-4 h-4 text-[#EAD35B] ml-1" fill="currentColor" />
@@ -157,7 +157,7 @@ export default function Home() {
             {/* Left Image */}
             <div className="relative rounded-[2.5rem] overflow-hidden h-[500px] lg:h-[650px] w-full bg-slate-100">
               <img 
-                src="https://images.unsplash.com/photo-1605000797499-95a51c5269ae?q=80&w=1974&auto=format&fit=crop" 
+                src="/images/kenya_male_farmer_1783597008593.png" 
                 alt="Kenyan Farmer" 
                 className="absolute inset-0 w-full h-full object-cover"
               />
@@ -167,7 +167,7 @@ export default function Home() {
             <div className="flex flex-col justify-center">
               <div className="mb-10 rounded-[1.5rem] overflow-hidden h-48 w-full">
                 <img 
-                  src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?q=80&w=2070&auto=format&fit=crop" 
+                  src="/images/kenya_maize_farm_1783596979799.png" 
                   alt="Maize Farm field" 
                   className="w-full h-full object-cover"
                 />
@@ -255,10 +255,10 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             
             {[
-              { cat: "STAPLE CROPS", title: "Maize Protection", img: "https://images.unsplash.com/photo-1599940824399-b87987ceb72a?q=80&w=600&auto=format&fit=crop" },
-              { cat: "WEATHER", title: "Drought Insurance", img: "https://images.unsplash.com/photo-1464226184884-fa280b87c399?q=80&w=600&auto=format&fit=crop" },
-              { cat: "LIVESTOCK", title: "Cattle & Goat Cover", img: "https://images.unsplash.com/photo-1516467508483-a7212febe31a?q=80&w=600&auto=format&fit=crop" },
-              { cat: "PAYOUTS", title: "Direct Mobile Money", img: "https://images.unsplash.com/photo-1580828369019-2220d91244e3?q=80&w=600&auto=format&fit=crop" }
+              { cat: "STAPLE CROPS", title: "Maize Protection", img: "/images/kenya_maize_farm_1783596979799.png" },
+              { cat: "WEATHER", title: "Drought Insurance", img: "/images/kenya_farmer_smartphone_1783596990052.png" },
+              { cat: "LIVESTOCK", title: "Cattle & Goat Cover", img: "/images/kenya_cattle_goats_1783596999559.png" },
+              { cat: "PAYOUTS", title: "Direct Mobile Money", img: "/images/kenya_female_agent_1783597018347.png" }
             ].map((card, i) => (
               <div key={i} className="bg-white rounded-[2rem] p-6 pb-10 flex flex-col items-center relative group shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer border border-[#1B2B20]/5">
                 
@@ -350,7 +350,7 @@ export default function Home() {
           
           {/* Top Banner Image */}
           <div className="w-full h-64 lg:h-80 rounded-[3rem] relative overflow-hidden mb-16 shadow-sm">
-            <img src="https://images.unsplash.com/photo-1605000797499-95a51c5269ae?q=80&w=2000&auto=format&fit=crop" alt="Green wheat field" className="absolute inset-0 w-full h-full object-cover" />
+            <img src="/images/kenya_maize_farm_1783596979799.png" alt="Green wheat field" className="absolute inset-0 w-full h-full object-cover" />
             <div className="absolute inset-0 bg-black/40"></div>
             <div className="absolute inset-0 flex flex-col md:flex-row items-center justify-between p-8 lg:p-16">
               <div className="flex items-center gap-6">
@@ -389,10 +389,10 @@ export default function Home() {
           {/* Farmers Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
             {[
-              { role: "MAIZE FARMER", name: "David Ochieng", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=600&auto=format&fit=crop" },
-              { role: "M-PESA AGENT", name: "Grace Wanjiku", img: "https://images.unsplash.com/photo-1530507629858-e4977d30e9e0?q=80&w=600&auto=format&fit=crop" },
-              { role: "AGRONOMIST", name: "Peter Kamau", img: "https://images.unsplash.com/photo-1625246220816-17b5fb9017fa?q=80&w=600&auto=format&fit=crop" },
-              { role: "COMMUNITY LEADER", name: "Sarah Njoroge", img: "https://images.unsplash.com/photo-1531123897727-8f129e1bf98c?q=80&w=600&auto=format&fit=crop" }
+              { role: "MAIZE FARMER", name: "David Ochieng", img: "/images/kenya_male_farmer_1783597008593.png" },
+              { role: "M-PESA AGENT", name: "Grace Wanjiku", img: "/images/kenya_female_agent_1783597018347.png" },
+              { role: "AGRONOMIST", name: "Peter Kamau", img: "/images/kenya_farmer_smartphone_1783596990052.png" },
+              { role: "COMMUNITY LEADER", name: "Sarah Njoroge", img: "/images/kenya_female_agent_1783597018347.png" }
             ].map((farmer, i) => (
               <div key={i} className="group cursor-pointer">
                 <div className="w-full h-80 rounded-[2rem] overflow-hidden mb-5 relative">
@@ -432,7 +432,7 @@ export default function Home() {
             
             {/* Left Image */}
             <div className="w-full lg:w-5/12 relative h-[500px] lg:h-[600px] rounded-[2.5rem] overflow-hidden bg-slate-100 z-10">
-              <img src="https://images.unsplash.com/photo-1592982537447-7440770cbfc9?q=80&w=800&auto=format&fit=crop" alt="Farmer holding crops" className="w-full h-full object-cover" />
+              <img src="/images/kenya_male_farmer_1783597008593.png" alt="Farmer holding crops" className="w-full h-full object-cover" />
               <div className="absolute top-12 -right-6 lg:-right-8 w-32 h-32 rounded-full bg-[#EAD35B] flex flex-col items-center justify-center shadow-xl z-20 hidden sm:flex">
                 <Tractor className="w-8 h-8 text-[#1B2B20] mb-1" strokeWidth={1.5} />
                 <span className="text-[11px] font-extrabold text-[#1B2B20] text-center leading-tight">Founded in<br/>2024</span>
@@ -483,9 +483,9 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { tag: "FOOD CROPS", date: "MARCH 28, 2024", author: "ADMIN", title: "How technology is transforming Kenyan agriculture", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop" },
-              { tag: "ORGANIC FARM", date: "APRIL 02, 2024", author: "ADMIN", title: "Why drought insurance is essential for maize farmers", img: "https://images.unsplash.com/photo-1464226184884-fa280b87c399?q=80&w=800&auto=format&fit=crop" },
-              { tag: "FARMING TIPS", date: "APRIL 15, 2024", author: "ADMIN", title: "Preparing your livestock for the upcoming dry season", img: "https://images.unsplash.com/photo-1516467508483-a7212febe31a?q=80&w=800&auto=format&fit=crop" }
+              { tag: "FOOD CROPS", date: "MARCH 28, 2024", author: "ADMIN", title: "How technology is transforming Kenyan agriculture", img: "/images/kenya_farmer_smartphone_1783596990052.png" },
+              { tag: "ORGANIC FARM", date: "APRIL 02, 2024", author: "ADMIN", title: "Why drought insurance is essential for maize farmers", img: "/images/kenya_maize_farm_1783596979799.png" },
+              { tag: "FARMING TIPS", date: "APRIL 15, 2024", author: "ADMIN", title: "Preparing your livestock for the upcoming dry season", img: "/images/kenya_cattle_goats_1783596999559.png" }
             ].map((post, i) => (
               <div key={i} className="group cursor-pointer">
                 <div className="w-full h-72 rounded-[2rem] overflow-hidden mb-6 relative">

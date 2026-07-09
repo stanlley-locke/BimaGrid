@@ -10,6 +10,7 @@ from apps.core.models import TimeStampedUUIDModel
 class PricingRule(TimeStampedUUIDModel):
 	crop = models.CharField(max_length=32, unique=True)
 	base_rate_per_acre = models.DecimalField(max_digits=12, decimal_places=2)
+	insured_value_per_acre = models.DecimalField(max_digits=12, decimal_places=2, default=10000.00)
 	drought_multiplier = models.DecimalField(max_digits=8, decimal_places=2, default=1)
 	flood_multiplier = models.DecimalField(max_digits=8, decimal_places=2, default=1)
 	mitigation_discount_cap = models.DecimalField(max_digits=5, decimal_places=2, default=0)

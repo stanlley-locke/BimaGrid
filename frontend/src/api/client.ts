@@ -106,7 +106,7 @@ function normalizeList<T>(data: T[] | PaginatedResponse<T>): T[] {
 }
 
 export const authApi = {
-  async login(credentials: LoginCredentials): Promise<{ token: string; user?: User }> {
+  async login(credentials: LoginCredentials): Promise<{ token: string; user?: User; requires_password_change?: boolean }> {
     const endpoints = ['/accounts/login/', '/auth/token/', '/accounts/token/'];
 
     let lastError: ApiClientError | null = null;
@@ -128,7 +128,7 @@ export const authApi = {
         }
 
         setStoredToken(token);
-        return { token, user: data.user };
+        return { token, user: data.user, requires_password_change: data.requires_password_change };
       } catch (error) {
         if (error instanceof ApiClientError && error.status === 404) {
           lastError = error;
