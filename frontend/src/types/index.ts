@@ -97,6 +97,12 @@ export interface Policy {
   status: string;
   metadata: Record<string, unknown>;
   events?: PolicyEvent[];
+  farmer_name?: string;
+  farmer_phone?: string;
+  ward_name?: string;
+  constituency_name?: string;
+  subcounty_name?: string;
+  county_name?: string;
   created_at: string;
   updated_at: string;
 }

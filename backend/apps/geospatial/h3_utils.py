@@ -45,7 +45,10 @@ def h3_index_from_geojson(geometry: dict[str, Any], resolution: int | None = Non
 
 
 def k_ring_indices(h3_index: str, k: int = 1) -> list[str]:
-	return list(h3.grid_disk(h3_index, k))
+	try:
+		return list(h3.grid_disk(h3_index, k))
+	except Exception:
+		return [h3_index]
 
 
 def compact_indices(h3_indices: list[str]) -> list[str]:

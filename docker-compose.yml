@@ -95,9 +95,6 @@ services:
   backend:
     build: *backend-build
     <<: *backend-env
-    ports:
-      - "8000:8000"
-      - "50051:50051"
     volumes:
       - ./backend:/app/backend
       - backend-static:/app/static
@@ -162,8 +159,7 @@ services:
       BACKEND_URL: http://backend:8000
       GRPC_BACKEND_TARGET: backend:50051
       REDIS_URL: redis://redis:6379/2
-    ports:
-      - "8001:8001"
+      DJANGO_SETTINGS_MODULE: src.config.settings
     volumes:
       - ./ussd:/app/ussd
     depends_on:
@@ -181,9 +177,12 @@ services:
     build:
       context: .
       dockerfile: oracle-node/Dockerfile
+    env_file: .env
     environment:
       BACKEND_GRPC_URL: http://backend:50051
       BLOCKCHAIN_RPC_URL: http://hardhat:8545
+      # Hardhat account #1 — pre-funded on fresh node (public test key, local dev only)
+      ORACLE_SIGNING_KEY: ${ORACLE_SIGNING_KEY:-0x59c6995e998f97a5a0044966f0945389dc9b86e40d15d15f30bbd85d890c1531}
       RUST_LOG: info
     depends_on:
       backend:
@@ -205,8 +204,6 @@ services:
       USSD_URL: http://ussd:8001
       PORT: 3001
       NODE_ENV: development
-    ports:
-      - "3001:3001"
     depends_on:
       backend:
         condition: service_started
@@ -245,9 +242,9 @@ services:
       context: .
       dockerfile: infrastructure/docker/Dockerfiles/nginx.Dockerfile
     ports:
-      - "80:80"
-      - "443:443"
-      - "50051:50051"
+      - "8080:80"
+      - "8443:443"
+      - "50056:50051"
     volumes:
       - backend-static:/static:ro
       - backend-media:/media:ro

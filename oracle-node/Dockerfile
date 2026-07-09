@@ -1,27 +1,32 @@
 # ============================================================
 # Stage 1: builder — compile the Rust binary
 # ============================================================
-FROM rust:1.78-slim AS builder
+FROM rust:slim-bookworm AS builder
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+ARG APT_MIRROR=cdn-fastly.deb.debian.org
+RUN sed -i "s/deb.debian.org/${APT_MIRROR}/g" /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
+
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
         pkg-config \
         libssl-dev \
-        protobuf-compiler \
-    && rm -rf /var/lib/apt/lists/*
+        protobuf-compiler
 
 # Copy manifest files first to leverage Docker layer caching for dependencies
 COPY oracle-node/Cargo.toml oracle-node/Cargo.lock ./
 COPY oracle-node/build.rs ./
+COPY protos ../protos
 
 # Build a dummy main to cache dependencies before copying real source
 RUN mkdir -p src && echo 'fn main() {}' > src/main.rs
 RUN cargo build --release || true
 
-# Copy real source and proto definitions, then rebuild
+# Copy real source and contract artifacts, then rebuild
 COPY oracle-node/src ./src
-COPY protos ../protos
+COPY contracts/artifacts ../contracts/artifacts
 
 RUN touch src/main.rs && cargo build --release
 
@@ -34,15 +39,22 @@ LABEL maintainer="BimaGrid Team <dev@bimagrid.io>"
 LABEL org.opencontainers.image.title="BimaGrid Oracle Node"
 LABEL org.opencontainers.image.description="Rust oracle service bridging on-chain data to the backend"
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+ARG APT_MIRROR=cdn-fastly.deb.debian.org
+RUN sed -i "s/deb.debian.org/${APT_MIRROR}/g" /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
+
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
         libssl3 \
-        curl \
-    && rm -rf /var/lib/apt/lists/*
+        curl
 
 RUN useradd -r -u 1003 -s /bin/false oracle
 
+WORKDIR /app
+
 COPY --from=builder /app/target/release/bimagrid-oracle /usr/local/bin/bimagrid-oracle
+COPY --chown=oracle:oracle oracle-node/oracle-config-1.toml .
 RUN chmod 500 /usr/local/bin/bimagrid-oracle
 
 USER oracle

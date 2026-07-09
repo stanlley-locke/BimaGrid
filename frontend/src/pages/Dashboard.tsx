@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, FileText, Banknote, RefreshCw, Zap, CloudLightning, 
   Activity, AlertCircle, ArrowUpRight, LayoutDashboard, Database,
-  Settings, Server, LogOut, Search, Menu, Bell, CloudRain, Shield, BookOpen, Sliders
+  Settings, Server, LogOut, Search, Menu, Bell, CloudRain, Shield, BookOpen, Sliders, Leaf, Tractor, X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -34,7 +34,7 @@ function formatDate(value: string): string {
 
 const tabVariants = {
   initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 30 } },
+  animate: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 30 } },
   exit: { opacity: 0, y: -20, transition: { duration: 0.2 } }
 };
 
@@ -53,6 +53,17 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [selectedPolicyForDetail, setSelectedPolicyForDetail] = useState<Policy | null>(null);
+  const [weatherSearchH3, setWeatherSearchH3] = useState('8928308280fffff');
+  const [weatherAnalysis, setWeatherAnalysis] = useState<{ rainfall: number | null; ndvi: number | null; loading: boolean; error: string | null }>({
+    rainfall: null,
+    ndvi: null,
+    loading: false,
+    error: null
+  });
+  const [resourceSearch, setResourceSearch] = useState('');
+  const [calculatorAcreage, setCalculatorAcreage] = useState('1.0');
+  const [calculatorCrop, setCalculatorCrop] = useState('maize');
 
   const loadDashboard = useCallback(async (showToast = false) => {
     if (!showToast) setIsLoading(true);
@@ -87,6 +98,32 @@ export default function Dashboard() {
   useEffect(() => {
     void loadDashboard();
   }, [loadDashboard]);
+
+  const handleQueryWeather = async () => {
+    if (!weatherSearchH3) return;
+    setWeatherAnalysis(prev => ({ ...prev, loading: true, error: null }));
+    try {
+      const [rainfallRes, ndviRes] = await Promise.all([
+        dashboardApi.getRainfall(weatherSearchH3),
+        dashboardApi.getNdvi(weatherSearchH3)
+      ]);
+      setWeatherAnalysis({
+        rainfall: rainfallRes.value,
+        ndvi: ndviRes.value,
+        loading: false,
+        error: null
+      });
+      toast.success(`Weather analysis fetched for ${weatherSearchH3}`);
+    } catch (err) {
+      setWeatherAnalysis({
+        rainfall: null,
+        ndvi: null,
+        loading: false,
+        error: err instanceof Error ? err.message : 'Failed to query'
+      });
+      toast.error('Failed to query weather metrics.');
+    }
+  };
 
   const activePolicies = useMemo(
     () => policies.filter((policy) => policy.status === 'active'),
@@ -127,6 +164,27 @@ export default function Dashboard() {
   }, [policies, searchQuery]);
 
   const isAdmin = user?.profile?.role === 'admin' || user?.profile?.role === 'broker';
+  const isFarmer = user?.profile?.role === 'farmer';
+
+  const farmerActivePoliciesCount = useMemo(
+    () => policies.filter((p) => p.status === 'active').length,
+    [policies]
+  );
+
+  const farmerTotalAcreage = useMemo(
+    () => policies.reduce((sum, p) => sum + parseFloat(p.insured_acreage || '0'), 0),
+    [policies]
+  );
+
+  const farmerTotalPremium = useMemo(
+    () => policies.reduce((sum, p) => sum + parseFloat(p.premium_amount || '0'), 0),
+    [policies]
+  );
+
+  const farmerTotalPayouts = useMemo(
+    () => payouts.reduce((sum, p) => sum + parseFloat(p.amount || '0'), 0),
+    [payouts]
+  );
 
   const handleTriggerEvaluation = async () => {
     setIsEvaluating(true);
@@ -184,7 +242,9 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="text-2xl font-black tracking-tight text-bima-darkGreen font-sans leading-none">bimagrid</p>
-                <p className="text-[10px] font-extrabold text-bima-green uppercase tracking-widest mt-1">Agent Portal</p>
+                <p className="text-[10px] font-extrabold text-bima-green uppercase tracking-widest mt-1">
+                  {isFarmer ? 'Farmer Portal' : 'Agent Portal'}
+                </p>
               </div>
             </div>
           ) : (
@@ -198,22 +258,28 @@ export default function Dashboard() {
           )}
           
           <NavItem id="overview" icon={LayoutDashboard} label="Overview" />
-          <NavItem id="farmers" icon={Users} label="Farmers & Plans" />
-          <NavItem id="claims" icon={Banknote} label="Claims & Payouts" />
-          <NavItem id="weather" icon={CloudRain} label="Weather Analytics" />
+          {isFarmer ? (
+            <NavItem id="farmers" icon={Shield} label="My Policies" />
+          ) : (
+            <NavItem id="farmers" icon={Users} label="Farmers & Plans" />
+          )}
+          <NavItem id="claims" icon={Banknote} label={isFarmer ? "My Payouts" : "Claims & Payouts"} />
+          {!isFarmer && <NavItem id="weather" icon={CloudRain} label="Weather Analytics" />}
           
           <div className="my-6"></div>
           {!isSidebarCollapsed && (
-            <p className="px-5 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-4">Management</p>
+            <p className="px-5 text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-4">
+              {isFarmer ? "Account" : "Management"}
+            </p>
           )}
           
-          <NavItem id="resources" icon={BookOpen} label="Agent Resources" />
-          <NavItem id="system" icon={Server} label="System Actions" />
+          {!isFarmer && <NavItem id="resources" icon={BookOpen} label="Agent Resources" />}
+          {!isFarmer && <NavItem id="system" icon={Server} label="System Actions" />}
           <NavItem id="settings" icon={Sliders} label="Settings" />
         </div>
 
         <div className="p-4 border-t border-slate-100 bg-slate-50/50">
-          {!isSidebarCollapsed && (
+          {!isSidebarCollapsed && !isFarmer && (
             <button type="button" onClick={() => setIsRegisterModalOpen(true)} className="w-full flex items-center justify-center gap-2 py-4 px-4 border border-transparent rounded-2xl shadow-[0_4px_14px_rgba(101,154,95,0.3)] text-sm font-bold text-white bg-bima-green hover:bg-[#527d4c] transition-all mb-3 hover:-translate-y-0.5">
               <Shield className="w-4 h-4" /> Register Farmer
             </button>
@@ -243,10 +309,10 @@ export default function Dashboard() {
              </button>
              <div className="hidden sm:block">
                <h2 className="text-[22px] font-black text-bima-darkGreen capitalize tracking-tight">
-                  {activeTab.replace('-', ' ')}
+                  {isFarmer && activeTab === 'farmers' ? 'My Policies' : isFarmer && activeTab === 'claims' ? 'My Payouts' : activeTab.replace('-', ' ')}
                </h2>
                <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
-                 <span>Portal</span> <span className="w-1 h-1 rounded-full bg-slate-300"></span> <span className="text-bima-green">{activeTab.replace('-', ' ')}</span>
+                 <span>Portal</span> <span className="w-1 h-1 rounded-full bg-slate-300"></span> <span className="text-bima-green">{isFarmer && activeTab === 'farmers' ? 'My Policies' : isFarmer && activeTab === 'claims' ? 'My Payouts' : activeTab.replace('-', ' ')}</span>
                </div>
              </div>
            </div>
@@ -279,10 +345,12 @@ export default function Dashboard() {
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
               <div>
                 <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-bima-darkGreen capitalize">
-                  {activeTab === 'overview' ? `Welcome back, ${user?.profile?.full_name?.split(' ')[0] || 'Agent'}` : activeTab.replace('-', ' ')}
+                  {activeTab === 'overview' ? `Welcome back, ${user?.profile?.full_name?.split(' ')[0] || (isFarmer ? 'Farmer' : 'Agent')}` : isFarmer && activeTab === 'farmers' ? 'My Policies' : isFarmer && activeTab === 'claims' ? 'My Payouts' : activeTab.replace('-', ' ')}
                 </h1>
                 {activeTab === 'overview' && (
-                   <p className="text-[15px] font-semibold text-slate-500 mt-2 max-w-xl leading-relaxed">Here is what's happening with your registered farm protection plans today.</p>
+                   <p className="text-[15px] font-semibold text-slate-500 mt-2 max-w-xl leading-relaxed">
+                     {isFarmer ? 'Here is a summary of your active crop protection plans and payouts.' : "Here is what's happening with your registered farm protection plans today."}
+                   </p>
                 )}
               </div>
               <button type="button" onClick={() => void loadDashboard(true)} className="btn-secondary gap-2 text-sm px-5 py-3 bg-white hover:bg-slate-50 shadow-sm border border-slate-200 shrink-0 hover:-translate-y-0.5 transition-transform">
@@ -295,93 +363,163 @@ export default function Dashboard() {
                 <motion.div key="overview" variants={tabVariants} initial="initial" animate="animate" exit="exit" className="space-y-10">
                   {/* Premium Stats Grid */}
                   <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-                    {[
-                      { label: 'Farmers Registered', value: farmerRecords.length, icon: Users, color: 'text-[#659A5F]', bg: 'bg-[#659A5F]/10', gradient: 'from-[#659A5F]/20' },
-                      { label: 'Active Plans', value: activePolicies.length, icon: FileText, color: 'text-[#EAD35B]', bg: 'bg-[#EAD35B]/20', gradient: 'from-[#EAD35B]/30' },
-                      { label: 'Total Payments', value: formatCurrency(totalPremium), icon: Banknote, color: 'text-[#1B2B20]', bg: 'bg-[#1B2B20]/5', gradient: 'from-[#1B2B20]/10' },
-                      { label: 'Recent Payouts', value: formatCurrency(totalPayouts), icon: Zap, color: 'text-[#5A8855]', bg: 'bg-[#5A8855]/10', gradient: 'from-[#5A8855]/20' },
-                    ].map((stat) => (
-                      <div key={stat.label} className="relative group overflow-hidden bg-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:shadow-[0_8px_40px_rgb(27,43,32,0.08)] hover:-translate-y-1 transition-all duration-300">
-                        <div className={`absolute -top-10 -right-10 w-40 h-40 opacity-40 bg-gradient-to-bl ${stat.gradient} to-transparent rounded-full -z-10 group-hover:scale-150 transition-transform duration-700 ease-out`}></div>
-                        <div className={`w-14 h-14 rounded-[14px] ${stat.bg} flex items-center justify-center mb-6 shadow-inner`}>
-                          <stat.icon className={`w-7 h-7 ${stat.color}`} />
+                    {isFarmer ? (
+                      [
+                        { label: 'Active Policies', value: farmerActivePoliciesCount, icon: Shield, color: 'text-[#EAD35B]', bg: 'bg-[#EAD35B]/20', gradient: 'from-[#EAD35B]/30' },
+                        { label: 'Insured Farm Size', value: `${farmerTotalAcreage.toFixed(1)} Acres`, icon: Leaf, color: 'text-[#659A5F]', bg: 'bg-[#659A5F]/10', gradient: 'from-[#659A5F]/20' },
+                        { label: 'Premium Paid', value: formatCurrency(farmerTotalPremium), icon: Banknote, color: 'text-[#1B2B20]', bg: 'bg-[#1B2B20]/5', gradient: 'from-[#1B2B20]/10' },
+                        { label: 'Payouts Received', value: formatCurrency(farmerTotalPayouts), icon: Zap, color: 'text-[#5A8855]', bg: 'bg-[#5A8855]/10', gradient: 'from-[#5A8855]/20' },
+                      ].map((stat) => (
+                        <div key={stat.label} className="relative group overflow-hidden bg-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:shadow-[0_8px_40px_rgb(27,43,32,0.08)] hover:-translate-y-1 transition-all duration-300">
+                          <div className={`absolute -top-10 -right-10 w-40 h-40 opacity-40 bg-gradient-to-bl ${stat.gradient} to-transparent rounded-full -z-10 group-hover:scale-150 transition-transform duration-700 ease-out`}></div>
+                          <div className={`w-14 h-14 rounded-[14px] ${stat.bg} flex items-center justify-center mb-6 shadow-inner`}>
+                            <stat.icon className={`w-7 h-7 ${stat.color}`} />
+                          </div>
+                          <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
+                          <p className="mt-2 text-3xl font-black text-bima-darkGreen tracking-tighter">{stat.value}</p>
                         </div>
-                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
-                        <p className="mt-2 text-3xl font-black text-bima-darkGreen tracking-tighter">{stat.value}</p>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      [
+                        { label: 'Farmers Registered', value: farmerRecords.length, icon: Users, color: 'text-[#659A5F]', bg: 'bg-[#659A5F]/10', gradient: 'from-[#659A5F]/20' },
+                        { label: 'Active Plans', value: activePolicies.length, icon: FileText, color: 'text-[#EAD35B]', bg: 'bg-[#EAD35B]/20', gradient: 'from-[#EAD35B]/30' },
+                        { label: 'Total Payments', value: formatCurrency(totalPremium), icon: Banknote, color: 'text-[#1B2B20]', bg: 'bg-[#1B2B20]/5', gradient: 'from-[#1B2B20]/10' },
+                        { label: 'Recent Payouts', value: formatCurrency(totalPayouts), icon: Zap, color: 'text-[#5A8855]', bg: 'bg-[#5A8855]/10', gradient: 'from-[#5A8855]/20' },
+                      ].map((stat) => (
+                        <div key={stat.label} className="relative group overflow-hidden bg-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:shadow-[0_8px_40px_rgb(27,43,32,0.08)] hover:-translate-y-1 transition-all duration-300">
+                          <div className={`absolute -top-10 -right-10 w-40 h-40 opacity-40 bg-gradient-to-bl ${stat.gradient} to-transparent rounded-full -z-10 group-hover:scale-150 transition-transform duration-700 ease-out`}></div>
+                          <div className={`w-14 h-14 rounded-[14px] ${stat.bg} flex items-center justify-center mb-6 shadow-inner`}>
+                            <stat.icon className={`w-7 h-7 ${stat.color}`} />
+                          </div>
+                          <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
+                          <p className="mt-2 text-3xl font-black text-bima-darkGreen tracking-tighter">{stat.value}</p>
+                        </div>
+                      ))
+                    )}
                   </div>
 
                   <div className="grid lg:grid-cols-2 gap-8">
-                    {/* Quick Action Widget */}
-                    <div className="bg-white rounded-3xl p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-hidden group">
-                      <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-bima-lightGreen/20 to-transparent rounded-bl-full -z-10 group-hover:scale-110 transition-transform duration-700"></div>
-                      <div className="flex items-center gap-4 mb-4">
-                         <div className="p-3 bg-bima-yellow/20 rounded-2xl text-bima-yellow">
-                           <CloudRain className="w-6 h-6" />
-                         </div>
-                         <h3 className="text-2xl font-black text-bima-darkGreen tracking-tight">Simulate Weather</h3>
-                      </div>
-                      <p className="text-[15px] font-semibold text-slate-500 mb-8 max-w-sm leading-relaxed">
-                        Check satellite data for a specific farm region to verify policies and process immediate payouts.
-                      </p>
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <input
-                          className="w-full sm:max-w-[240px] px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-mono text-sm font-bold text-slate-700 focus:ring-2 focus:ring-bima-green focus:border-bima-green transition-all placeholder:text-slate-400 shadow-inner"
-                          value={evaluationH3}
-                          onChange={(e) => setEvaluationH3(e.target.value)}
-                          placeholder="e.g. 8928308280fffff"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => void handleTriggerEvaluation()}
-                          disabled={isEvaluating || !evaluationH3}
-                          className="btn-primary sm:flex-1 shadow-[0_4px_14px_rgba(101,154,95,0.3)] hover:shadow-[0_6px_20px_rgba(101,154,95,0.4)] hover:-translate-y-0.5 py-4 px-6"
-                        >
-                          {isEvaluating ? (
-                            <><RefreshCw className="w-5 h-5 mr-2 animate-spin" /> Checking…</>
-                          ) : (
-                            <><Activity className="w-5 h-5 mr-2" /> Verify Satellite Data</>
-                          )}
-                        </button>
-                      </div>
-                    </div>
+                    {isFarmer ? (
+                      <>
+                        {/* Farmer Advisory Widget */}
+                        <div className="bg-white rounded-3xl p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-hidden group">
+                          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-bima-lightGreen/20 to-transparent rounded-bl-full -z-10 group-hover:scale-110 transition-transform duration-700"></div>
+                          <div className="flex items-center gap-4 mb-4">
+                             <div className="p-3 bg-bima-green/20 rounded-2xl text-bima-green">
+                               <Leaf className="w-6 h-6" />
+                             </div>
+                             <h3 className="text-2xl font-black text-bima-darkGreen tracking-tight">Agricultural Advisory</h3>
+                          </div>
+                          <p className="text-[15px] font-semibold text-slate-500 mb-6 leading-relaxed">
+                            Weather systems indicate stable conditions. Satellite arrays are tracking H3 region cell: <span className="font-mono text-bima-darkGreen bg-slate-100 px-2 py-0.5 rounded font-bold">{policies[0]?.coverage_h3 || '8928308280fffff'}</span>.
+                          </p>
+                          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6">
+                            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Smart Recommendation</p>
+                            <p className="text-sm font-bold text-bima-darkGreen leading-relaxed">
+                              Keep weeding crop areas clean to maximize soil moisture retention. The regional rainfall index is within standard ranges.
+                            </p>
+                          </div>
+                        </div>
 
-                    {/* System Health Widget */}
-                    <div className="bg-gradient-to-br from-[#1B2B20] to-[#0f1812] rounded-3xl p-10 shadow-[0_20px_40px_rgba(27,43,32,0.3)] text-white relative overflow-hidden group">
-                      <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='3' cy='3' r='1.5' fill='%23ffffff'/%3E%3C/svg%3E\")", backgroundSize: "24px 24px" }}></div>
-                      <div className="absolute -top-20 -right-20 w-64 h-64 bg-bima-green/20 blur-[50px] rounded-full group-hover:bg-bima-green/30 transition-colors duration-700"></div>
-                      
-                      <div className="flex flex-wrap justify-between items-start gap-4 mb-10 relative z-10">
-                        <div>
-                          <h3 className="text-2xl font-black text-white mb-2 tracking-tight flex items-center gap-3">
-                            <Server className="w-6 h-6 text-bima-lightGreen" /> System Health
-                          </h3>
-                          <p className="text-[15px] font-semibold text-white/60">Live backend connectivity and API status</p>
-                        </div>
-                        {health ? (
-                          <div className="px-4 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-black tracking-widest flex items-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_10px_rgba(16,185,129,1)]"></span>
-                            ONLINE
+                        {/* Smart Contract Protection Widget */}
+                        <div className="bg-gradient-to-br from-[#1B2B20] to-[#0f1812] rounded-3xl p-10 shadow-[0_20px_40px_rgba(27,43,32,0.3)] text-white relative overflow-hidden group">
+                          <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='3' cy='3' r='1.5' fill='%23ffffff'/%3E%3C/svg%3E\")", backgroundSize: "24px 24px" }}></div>
+                          <div className="absolute -top-20 -right-20 w-64 h-64 bg-bima-green/20 blur-[50px] rounded-full group-hover:bg-bima-green/30 transition-colors duration-700"></div>
+                          
+                          <div className="relative z-10 flex flex-col h-full justify-between">
+                            <div>
+                              <h3 className="text-2xl font-black text-white mb-2 tracking-tight flex items-center gap-3">
+                                <Shield className="w-6 h-6 text-bima-lightGreen" /> Blockchain Protected
+                              </h3>
+                              <p className="text-[15px] font-semibold text-white/60 mb-6">Automated verification & instant claims processing</p>
+                              
+                              <p className="text-sm font-bold text-slate-300 leading-relaxed mb-6">
+                                Your policy is bound to the BimaGrid smart contract. If weather data registers severe drought, payouts are instantly triggered to your phone number: <span className="font-mono text-white underline">{user?.profile?.phone_number || 'Registered M-Pesa'}</span>.
+                              </p>
+                            </div>
+                            
+                            <div className="pt-4 border-t border-white/10 flex items-center justify-between text-xs text-white/50 font-mono">
+                              <span>CONTRACT STATUS</span>
+                              <span className="text-emerald-400 font-bold tracking-widest flex items-center gap-1.5">
+                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span> ACTIVE
+                              </span>
+                            </div>
                           </div>
-                        ) : (
-                          <div className="px-4 py-2 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-black tracking-widest flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full bg-red-400"></span>
-                            OFFLINE
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        {/* Quick Action Widget */}
+                        <div className="bg-white rounded-3xl p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-hidden group">
+                          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-bima-lightGreen/20 to-transparent rounded-bl-full -z-10 group-hover:scale-110 transition-transform duration-700"></div>
+                          <div className="flex items-center gap-4 mb-4">
+                             <div className="p-3 bg-bima-yellow/20 rounded-2xl text-bima-yellow">
+                               <CloudRain className="w-6 h-6" />
+                             </div>
+                             <h3 className="text-2xl font-black text-bima-darkGreen tracking-tight">Simulate Weather</h3>
                           </div>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-2 gap-5 relative z-10">
-                        <div className="bg-white/5 rounded-[20px] p-6 border border-white/10 backdrop-blur-md hover:bg-white/10 transition-colors">
-                          <p className="text-[11px] font-black uppercase tracking-widest text-white/50 mb-2">Platform Version</p>
-                          <p className="text-2xl font-mono font-bold text-white">{health?.version ?? '—'}</p>
+                          <p className="text-[15px] font-semibold text-slate-500 mb-8 max-w-sm leading-relaxed">
+                            Check satellite data for a specific farm region to verify policies and process immediate payouts.
+                          </p>
+                          <div className="flex flex-col sm:flex-row gap-4">
+                            <input
+                              className="w-full sm:max-w-[240px] px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-mono text-sm font-bold text-slate-700 focus:ring-2 focus:ring-bima-green focus:border-bima-green transition-all placeholder:text-slate-400 shadow-inner"
+                              value={evaluationH3}
+                              onChange={(e) => setEvaluationH3(e.target.value)}
+                              placeholder="e.g. 8928308280fffff"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => void handleTriggerEvaluation()}
+                              disabled={isEvaluating || !evaluationH3}
+                              className="btn-primary sm:flex-1 shadow-[0_4px_14px_rgba(101,154,95,0.3)] hover:shadow-[0_6px_20px_rgba(101,154,95,0.4)] hover:-translate-y-0.5 py-4 px-6"
+                            >
+                              {isEvaluating ? (
+                                <><RefreshCw className="w-5 h-5 mr-2 animate-spin" /> Checking…</>
+                              ) : (
+                                <><Activity className="w-5 h-5 mr-2" /> Verify Satellite Data</>
+                              )}
+                            </button>
+                          </div>
                         </div>
-                        <div className="bg-white/5 rounded-[20px] p-6 border border-white/10 backdrop-blur-md hover:bg-white/10 transition-colors">
-                          <p className="text-[11px] font-black uppercase tracking-widest text-white/50 mb-2">Active Protocols</p>
-                          <p className="text-2xl font-mono font-bold text-bima-yellow">4 Modules</p>
+
+                        {/* System Health Widget */}
+                        <div className="bg-gradient-to-br from-[#1B2B20] to-[#0f1812] rounded-3xl p-10 shadow-[0_20px_40px_rgba(27,43,32,0.3)] text-white relative overflow-hidden group">
+                          <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='3' cy='3' r='1.5' fill='%23ffffff'/%3E%3C/svg%3E\")", backgroundSize: "24px 24px" }}></div>
+                          <div className="absolute -top-20 -right-20 w-64 h-64 bg-bima-green/20 blur-[50px] rounded-full group-hover:bg-bima-green/30 transition-colors duration-700"></div>
+                          
+                          <div className="flex flex-wrap justify-between items-start gap-4 mb-10 relative z-10">
+                            <div>
+                              <h3 className="text-2xl font-black text-white mb-2 tracking-tight flex items-center gap-3">
+                                <Server className="w-6 h-6 text-bima-lightGreen" /> System Health
+                              </h3>
+                              <p className="text-[15px] font-semibold text-white/60">Live backend connectivity and API status</p>
+                            </div>
+                            {health ? (
+                              <div className="px-4 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-black tracking-widest flex items-center gap-2 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
+                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_10px_rgba(16,185,129,1)]"></span>
+                                ONLINE
+                              </div>
+                            ) : (
+                              <div className="px-4 py-2 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-black tracking-widest flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-red-400"></span>
+                                OFFLINE
+                              </div>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 gap-5 relative z-10">
+                            <div className="bg-white/5 rounded-[20px] p-6 border border-white/10 backdrop-blur-md hover:bg-white/10 transition-colors">
+                              <p className="text-[11px] font-black uppercase tracking-widest text-white/50 mb-2">Platform Version</p>
+                              <p className="text-2xl font-mono font-bold text-white">{health?.version ?? '—'}</p>
+                            </div>
+                            <div className="bg-white/5 rounded-[20px] p-6 border border-white/10 backdrop-blur-md hover:bg-white/10 transition-colors">
+                              <p className="text-[11px] font-black uppercase tracking-widest text-white/50 mb-2">Active Protocols</p>
+                              <p className="text-2xl font-mono font-bold text-bima-yellow">4 Modules</p>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
+                      </>
+                    )}
                   </div>
                 </motion.div>
               )}
@@ -391,8 +529,12 @@ export default function Dashboard() {
                   <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden">
                     <div className="p-8 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                       <div>
-                        <h2 className="text-2xl font-black text-bima-darkGreen tracking-tight">Farmer & Plan Records</h2>
-                        <p className="text-[15px] font-semibold text-slate-500 mt-2 max-w-md leading-relaxed">Complete directory of all farmers registered under your active agent account.</p>
+                        <h2 className="text-2xl font-black text-bima-darkGreen tracking-tight">
+                          {isFarmer ? 'My Crop Insurance Policies' : 'Farmer & Plan Records'}
+                        </h2>
+                        <p className="text-[15px] font-semibold text-slate-500 mt-2 max-w-md leading-relaxed">
+                          {isFarmer ? 'A comprehensive history of your crop protection plans and active coverage.' : 'Complete directory of all farmers registered under your active agent account.'}
+                        </p>
                       </div>
                       
                       <div className="flex flex-col sm:flex-row items-center gap-4 shrink-0">
@@ -412,13 +554,15 @@ export default function Dashboard() {
                           <span className="px-5 py-3.5 rounded-2xl bg-bima-lightGreen/20 text-bima-darkGreen font-black text-sm border border-bima-lightGreen/50 shrink-0">
                             {policies.length} Plans
                           </span>
-                          <button onClick={() => setIsRegisterModalOpen(true)} className="btn-primary py-3.5 px-6 text-sm shadow-[0_4px_14px_rgba(101,154,95,0.3)] hover:-translate-y-0.5 whitespace-nowrap">
-                            <Users className="w-4 h-4 mr-2" /> New Farmer
-                          </button>
+                          {!isFarmer && (
+                            <button onClick={() => setIsRegisterModalOpen(true)} className="btn-primary py-3.5 px-6 text-sm shadow-[0_4px_14px_rgba(101,154,95,0.3)] hover:-translate-y-0.5 whitespace-nowrap">
+                              <Users className="w-4 h-4 mr-2" /> New Farmer
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
-
+ 
                     {filteredPolicies.length === 0 ? (
                       <div className="p-20 flex flex-col items-center justify-center text-center bg-slate-50/30">
                         <div className="h-24 w-24 rounded-[2rem] bg-white flex items-center justify-center mb-8 border border-slate-100 shadow-sm">
@@ -430,7 +574,7 @@ export default function Dashboard() {
                         <p className="text-[15px] font-semibold text-slate-500 mt-3 max-w-md leading-relaxed">
                           {searchQuery 
                             ? `We couldn't find any plans matching "${searchQuery}". Try adjusting your search term.` 
-                            : "You haven't registered any farmers or farm plans yet. Click the button above to get started."}
+                            : (isFarmer ? "You don't have any crop insurance policies registered at the moment. Please contact an agent to get started." : "You haven't registered any farmers or farm plans yet. Click the button above to get started.")}
                         </p>
                       </div>
                     ) : (
@@ -439,6 +583,7 @@ export default function Dashboard() {
                           <thead>
                             <tr className="bg-slate-50 border-b border-slate-100">
                               <th className="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Plan ID</th>
+                              {!isFarmer && <th className="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Farmer</th>}
                               <th className="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Crop Protection</th>
                               <th className="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Region Code</th>
                               <th className="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Premium</th>
@@ -448,8 +593,13 @@ export default function Dashboard() {
                           </thead>
                           <tbody className="divide-y divide-slate-100">
                             {filteredPolicies.map((policy) => (
-                              <tr key={policy.id} className="hover:bg-slate-50 transition-colors group">
+                              <tr key={policy.id} onClick={() => setSelectedPolicyForDetail(policy)} className="hover:bg-slate-50 cursor-pointer transition-colors group">
                                 <td className="px-8 py-6 font-black text-bima-darkGreen text-[15px]">{policy.policy_number}</td>
+                                {!isFarmer && (
+                                  <td className="px-8 py-6 font-bold text-slate-800 text-[14px]">
+                                    {policy.farmer_name || 'Jane Doe'}
+                                  </td>
+                                )}
                                 <td className="px-8 py-6 capitalize text-slate-600 font-bold flex items-center gap-3">
                                   <span className="w-2.5 h-2.5 rounded-full bg-bima-green shadow-[0_0_10px_rgba(101,154,95,0.4)]"></span>
                                   {policy.crop}
@@ -623,19 +773,266 @@ export default function Dashboard() {
                 </motion.div>
               )}
               
-              {(activeTab === 'weather' || activeTab === 'resources' || activeTab === 'settings') && (
-                <motion.div key={activeTab} variants={tabVariants} initial="initial" animate="animate" exit="exit" className="flex flex-col items-center justify-center p-20 text-center bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 min-h-[400px]">
-                  <div className="h-24 w-24 rounded-[2rem] bg-slate-50 flex items-center justify-center mb-8 border border-slate-100">
-                     {activeTab === 'weather' && <CloudRain className="w-10 h-10 text-slate-300" />}
-                     {activeTab === 'resources' && <BookOpen className="w-10 h-10 text-slate-300" />}
-                     {activeTab === 'settings' && <Sliders className="w-10 h-10 text-slate-300" />}
+              {activeTab === 'weather' && (
+                <motion.div key="weather" variants={tabVariants} initial="initial" animate="animate" exit="exit" className="space-y-8">
+                  <div className="bg-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
+                    <h3 className="text-xl font-extrabold text-bima-darkGreen mb-2 flex items-center gap-2">
+                      <CloudRain className="w-5 h-5 text-bima-green" /> Regional Spatial Grid Analysis
+                    </h3>
+                    <p className="text-sm text-slate-500 font-medium mb-6">
+                      Query real-time meteorological indexes and NDVI baseline metrics for any H3 grid cell.
+                    </p>
+                    
+                    <div className="flex flex-col sm:flex-row gap-4 max-w-xl">
+                      <input
+                        className="input-field font-mono text-sm py-3 px-5 rounded-2xl flex-1 border-slate-200"
+                        value={weatherSearchH3}
+                        onChange={(e) => setWeatherSearchH3(e.target.value)}
+                        placeholder="Enter H3 Grid Index (e.g. 8928308280fffff)"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void handleQueryWeather()}
+                        disabled={weatherAnalysis.loading}
+                        className="btn-primary py-3 px-6 text-sm flex items-center justify-center gap-2"
+                      >
+                        {weatherAnalysis.loading ? (
+                          <><RefreshCw className="w-4 h-4 animate-spin" /> Querying...</>
+                        ) : (
+                          <><Search className="w-4 h-4" /> Analyze Grid</>
+                        )}
+                      </button>
+                    </div>
                   </div>
-                  <h3 className="text-2xl font-black text-bima-darkGreen tracking-tight mb-3 capitalize">
-                    {activeTab} Module
-                  </h3>
-                  <p className="text-slate-500 font-medium max-w-md leading-relaxed">
-                    This module is currently under development and will be available in an upcoming update.
-                  </p>
+
+                  {/* Weather Metrics display */}
+                  <div className="grid md:grid-cols-3 gap-6">
+                    {/* Card 1: NDVI */}
+                    <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
+                      <div>
+                        <div className="w-10 h-10 rounded-[10px] bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
+                          <Leaf className="w-5 h-5" />
+                        </div>
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">NDVI Metric</p>
+                        <p className="text-2xl font-black text-slate-800 mt-2 font-mono">
+                          {weatherAnalysis.ndvi !== null ? weatherAnalysis.ndvi.toFixed(2) : '—'}
+                        </p>
+                      </div>
+                      <div className="mt-6 border-t border-slate-50 pt-4 text-xs font-bold">
+                        {weatherAnalysis.ndvi !== null ? (
+                          weatherAnalysis.ndvi >= 0.5 ? (
+                            <span className="text-emerald-500">🟢 Healthy Crop Vegetation</span>
+                          ) : weatherAnalysis.ndvi >= 0.35 ? (
+                            <span className="text-yellow-500">🟡 Moderate Dry Stress</span>
+                          ) : (
+                            <span className="text-red-500">🔴 Severe Drought / Crop Damage</span>
+                          )
+                        ) : (
+                          <span className="text-slate-400">Perform analysis query</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Card 2: Rainfall */}
+                    <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
+                      <div>
+                        <div className="w-10 h-10 rounded-[10px] bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
+                          <CloudRain className="w-5 h-5" />
+                        </div>
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Precipitation</p>
+                        <p className="text-2xl font-black text-slate-800 mt-2 font-mono">
+                          {weatherAnalysis.rainfall !== null ? `${weatherAnalysis.rainfall.toFixed(1)} mm` : '—'}
+                        </p>
+                      </div>
+                      <div className="mt-6 border-t border-slate-50 pt-4 text-xs font-bold">
+                        {weatherAnalysis.rainfall !== null ? (
+                          weatherAnalysis.rainfall > 10 ? (
+                            <span className="text-emerald-500">🟢 Adequate Rainfall</span>
+                          ) : (
+                            <span className="text-red-500">🔴 Low Precipitation (Triggers Payout)</span>
+                          )
+                        ) : (
+                          <span className="text-slate-400">Perform analysis query</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Card 3: Soil Moisture */}
+                    <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
+                      <div>
+                        <div className="w-10 h-10 rounded-[10px] bg-amber-50 text-amber-600 flex items-center justify-center mb-4">
+                          <Tractor className="w-5 h-5" />
+                        </div>
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Soil Moisture</p>
+                        <p className="text-2xl font-black text-slate-800 mt-2 font-mono">
+                          {weatherAnalysis.ndvi !== null ? `${(weatherAnalysis.ndvi * 40).toFixed(0)}%` : '—'}
+                        </p>
+                      </div>
+                      <div className="mt-6 border-t border-slate-50 pt-4 text-xs font-bold">
+                        {weatherAnalysis.ndvi !== null ? (
+                          weatherAnalysis.ndvi * 40 >= 20 ? (
+                            <span className="text-emerald-500">🟢 Normal Moisture Level</span>
+                          ) : (
+                            <span className="text-red-500">🔴 Severe Soil Drought</span>
+                          )
+                        ) : (
+                          <span className="text-slate-400">Perform analysis query</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SVG Map grid mockup */}
+                  <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm flex flex-col items-center">
+                    <p className="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-6">Spatial H3 Hexagonal Layout Representation</p>
+                    <svg width="220" height="200" viewBox="0 0 220 200" className="opacity-90">
+                      {/* Hexagon 1: Top Left */}
+                      <polygon points="50,20 90,20 110,50 90,80 50,80 30,50" fill="#E2E8F0" stroke="#CBD5E1" strokeWidth="2" />
+                      {/* Hexagon 2: Top Right */}
+                      <polygon points="130,20 170,20 190,50 170,80 130,80 110,50" fill="#E2E8F0" stroke="#CBD5E1" strokeWidth="2" />
+                      {/* Hexagon 3: Center (Target) */}
+                      <polygon 
+                        points="90,75 130,75 150,105 130,135 90,135 70,105" 
+                        fill={weatherAnalysis.ndvi !== null ? (weatherAnalysis.ndvi >= 0.5 ? '#10B981' : weatherAnalysis.ndvi >= 0.35 ? '#F59E0B' : '#EF4444') : '#659A5F'} 
+                        stroke="#FFF" 
+                        strokeWidth="3" 
+                        className="transition-colors duration-500 shadow-lg"
+                      />
+                      {/* Hexagon 4: Bottom Left */}
+                      <polygon points="50,130 90,130 110,160 90,190 50,190 30,160" fill="#E2E8F0" stroke="#CBD5E1" strokeWidth="2" />
+                      {/* Hexagon 5: Bottom Right */}
+                      <polygon points="130,130 170,130 190,160 170,190 130,190 110,160" fill="#E2E8F0" stroke="#CBD5E1" strokeWidth="2" />
+                      
+                      <text x="110" y="110" textAnchor="middle" fill="#FFF" className="text-[10px] font-black font-mono">
+                        {weatherSearchH3 ? weatherSearchH3.substring(0, 7) : 'GRID'}
+                      </text>
+                    </svg>
+                    <div className="flex gap-4 mt-6 text-xs font-bold text-slate-500">
+                      <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-emerald-500"></span> Healthy</div>
+                      <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-amber-500"></span> Stressed</div>
+                      <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-red-500"></span> Dry / Drought</div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {activeTab === 'resources' && (
+                <motion.div key="resources" variants={tabVariants} initial="initial" animate="animate" exit="exit" className="grid md:grid-cols-2 gap-8">
+                  {/* Documentation */}
+                  <div className="bg-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 space-y-6">
+                    <h3 className="text-xl font-extrabold text-bima-darkGreen flex items-center gap-2">
+                      <BookOpen className="w-5 h-5 text-bima-green" /> Agent Resource Hub
+                    </h3>
+                    <div className="relative">
+                      <input
+                        className="input-field pl-10 py-2.5 text-xs"
+                        placeholder="Search resource guidelines..."
+                        value={resourceSearch}
+                        onChange={(e) => setResourceSearch(e.target.value)}
+                      />
+                      <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                    </div>
+
+                    <div className="space-y-3">
+                      <a href="#" className="block p-4 bg-slate-50 hover:bg-bima-lightGreen/10 border border-slate-100 rounded-2xl transition-all">
+                        <p className="text-xs font-bold text-bima-darkGreen mb-1">📋 Parametric Crop Protection Guidelines</p>
+                        <p className="text-[10px] text-slate-400 font-medium">Standard baseline thresholds, crop choices, and H3 region index metrics.</p>
+                      </a>
+                      <a href="#" className="block p-4 bg-slate-50 hover:bg-bima-lightGreen/10 border border-slate-100 rounded-2xl transition-all">
+                        <p className="text-xs font-bold text-bima-darkGreen mb-1">🔗 Smart Contract Escrow Operations</p>
+                        <p className="text-[10px] text-slate-400 font-medium">How policy premiums are locked in decentralized vault escrows and paid out.</p>
+                      </a>
+                      <a href="#" className="block p-4 bg-slate-50 hover:bg-bima-lightGreen/10 border border-slate-100 rounded-2xl transition-all">
+                        <p className="text-xs font-bold text-bima-darkGreen mb-1">📱 USSD Farmer Portal User Guide</p>
+                        <p className="text-[10px] text-slate-400 font-medium">Steps for farmers to dial *384*123# to view status and request manual audit review.</p>
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Premium Calculator */}
+                  <div className="bg-white rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-col justify-between">
+                    <div>
+                      <h3 className="text-xl font-extrabold text-bima-darkGreen mb-4 flex items-center gap-2">
+                        <Tractor className="w-5 h-5 text-bima-green" /> Premium Estimator
+                      </h3>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block mb-1 text-xs font-bold text-slate-700">Acreage</label>
+                          <input
+                            type="number"
+                            className="input-field py-2.5 text-xs"
+                            value={calculatorAcreage}
+                            onChange={(e) => setCalculatorAcreage(e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <label className="block mb-1 text-xs font-bold text-slate-700">Crop Type</label>
+                          <select
+                            className="input-field py-2.5 text-xs appearance-none bg-white"
+                            value={calculatorCrop}
+                            onChange={(e) => setCalculatorCrop(e.target.value)}
+                          >
+                            <option value="maize">Maize (KES 322 / Acre)</option>
+                            <option value="beans">Beans (KES 280 / Acre)</option>
+                            <option value="wheat">Wheat (KES 350 / Acre)</option>
+                            <option value="rice">Rice (KES 400 / Acre)</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-8 bg-bima-lightGreen/10 border border-bima-green/10 rounded-2xl p-4 flex justify-between items-center">
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Estimated Premium</span>
+                        <p className="text-2xl font-black text-bima-darkGreen">
+                          {formatCurrency(parseFloat(calculatorAcreage || '0') * (calculatorCrop === 'maize' ? 322 : calculatorCrop === 'beans' ? 280 : calculatorCrop === 'wheat' ? 350 : 400))}
+                        </p>
+                      </div>
+                      <span className="text-[10px] font-mono font-bold bg-white text-bima-darkGreen px-2.5 py-1 rounded-md border border-slate-200">
+                        180 Days Term
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+              
+              {activeTab === 'settings' && (
+                <motion.div key="settings" variants={tabVariants} initial="initial" animate="animate" exit="exit" className="max-w-2xl bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-8 sm:p-10 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-bima-green/10 to-transparent rounded-bl-full -z-10"></div>
+                  <h2 className="text-2xl font-black text-bima-darkGreen flex items-center gap-3 mb-8 tracking-tight">
+                    <div className="p-2.5 bg-bima-green/20 rounded-xl text-bima-green">
+                       <Sliders className="w-5 h-5" />
+                    </div>
+                    Profile Settings
+                  </h2>
+                  <div className="space-y-6">
+                    <div className="grid sm:grid-cols-2 gap-6">
+                      <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Full Name</p>
+                        <p className="text-lg font-bold text-bima-darkGreen">{user?.profile?.full_name || user?.username || '—'}</p>
+                      </div>
+                      <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Username</p>
+                        <p className="text-lg font-bold text-bima-darkGreen">{user?.username || '—'}</p>
+                      </div>
+                      <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Email Address</p>
+                        <p className="text-lg font-bold text-bima-darkGreen">{user?.email || '—'}</p>
+                      </div>
+                      <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Phone Number</p>
+                        <p className="text-lg font-bold text-bima-darkGreen">{user?.profile?.phone_number || '—'}</p>
+                      </div>
+                      <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Account Role</p>
+                        <p className="text-lg font-bold text-bima-darkGreen capitalize">{user?.profile?.role || 'Customer'}</p>
+                      </div>
+                      <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Preferred Language</p>
+                        <p className="text-lg font-bold text-bima-darkGreen">{user?.profile?.preferred_language === 'sw' ? 'Swahili (Kiswahili)' : 'English'}</p>
+                      </div>
+                    </div>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -648,6 +1045,141 @@ export default function Dashboard() {
         onClose={() => setIsRegisterModalOpen(false)}
         onSuccess={() => void loadDashboard(true)}
       />
+
+      {/* Policy Detail Modal */}
+      {selectedPolicyForDetail && (
+        <AnimatePresence>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+              onClick={() => setSelectedPolicyForDetail(null)}
+            />
+            
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white border border-slate-100 rounded-[1.5rem] p-6 sm:p-8 w-full max-w-2xl max-h-[85vh] overflow-y-auto relative z-10 shadow-2xl"
+            >
+              <div className="absolute top-0 left-0 w-full h-2 bg-bima-green rounded-t-[1.5rem]" />
+              
+              <div className="flex justify-between items-start gap-4 mb-6 border-b border-slate-100 pb-4">
+                <div>
+                  <span className="text-[10px] font-black bg-bima-lightGreen/50 text-bima-darkGreen px-2 py-0.5 rounded uppercase tracking-wider">
+                    Policy Plan File
+                  </span>
+                  <h3 className="text-2xl font-black text-bima-darkGreen mt-1 tracking-tight">
+                    {selectedPolicyForDetail.policy_number}
+                  </h3>
+                </div>
+                <button 
+                  onClick={() => setSelectedPolicyForDetail(null)}
+                  className="p-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-6 text-sm border-b border-slate-100 pb-6 mb-6">
+                <div>
+                  <span className="text-slate-400 font-bold text-xs uppercase tracking-wider">Farmer Full Name</span>
+                  <p className="font-extrabold text-slate-800 text-lg mt-1">{selectedPolicyForDetail.farmer_name || 'Jane Doe'}</p>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-bold text-xs uppercase tracking-wider">Registered Phone</span>
+                  <p className="font-bold text-slate-800 text-lg mt-1">{selectedPolicyForDetail.farmer_phone || '—'}</p>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-bold text-xs uppercase tracking-wider">Crop Category</span>
+                  <p className="font-bold text-slate-800 capitalize mt-1">{selectedPolicyForDetail.crop}</p>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-bold text-xs uppercase tracking-wider">Land Acreage</span>
+                  <p className="font-bold text-slate-800 mt-1">{selectedPolicyForDetail.insured_acreage} Acres</p>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-bold text-xs uppercase tracking-wider">Coverage Grid (H3 Index)</span>
+                  <p className="font-mono text-xs font-bold text-slate-700 bg-slate-50 px-2 py-1 rounded border border-slate-200 mt-1 inline-block">
+                    {selectedPolicyForDetail.coverage_h3}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-bold text-xs uppercase tracking-wider">Premium Amount</span>
+                  <p className="font-black text-bima-darkGreen text-xl mt-1">{formatCurrency(selectedPolicyForDetail.premium_amount)}</p>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-bold text-xs uppercase tracking-wider">Plan Term Dates</span>
+                  <p className="font-medium text-slate-600 mt-1">
+                    {formatDate(selectedPolicyForDetail.coverage_start)} to {formatDate(selectedPolicyForDetail.coverage_end)}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-bold text-xs uppercase tracking-wider">Blockchain Status</span>
+                  <span className="block mt-1"><StatusBadge status={selectedPolicyForDetail.status} /></span>
+                </div>
+
+                {/* Farmer Location Details */}
+                {(selectedPolicyForDetail.county_name || selectedPolicyForDetail.subcounty_name || selectedPolicyForDetail.constituency_name || selectedPolicyForDetail.ward_name) && (
+                  <div className="col-span-2 bg-slate-50 rounded-xl p-3 border border-slate-100 grid grid-cols-2 gap-3 text-xs mt-2">
+                    <div>
+                      <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider block">County / Sub-county</span>
+                      <p className="font-extrabold text-bima-darkGreen mt-0.5">
+                        {selectedPolicyForDetail.county_name || '—'} / {selectedPolicyForDetail.subcounty_name || '—'}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider block">Constituency / Ward</span>
+                      <p className="font-extrabold text-bima-darkGreen mt-0.5">
+                        {selectedPolicyForDetail.constituency_name || '—'} / {selectedPolicyForDetail.ward_name || '—'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Policy Event History */}
+              <div className="space-y-4 mb-6">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-400">Policy Lifecycle Events</h4>
+                <div className="relative border-l border-slate-100 pl-4 space-y-4">
+                  {selectedPolicyForDetail.events && selectedPolicyForDetail.events.length > 0 ? (
+                    selectedPolicyForDetail.events.map((evt, idx) => (
+                      <div key={idx} className="relative">
+                        <span className="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-bima-green border border-white" />
+                        <p className="text-xs font-black text-bima-darkGreen capitalize">{evt.event_type}</p>
+                        <p className="text-[10px] text-slate-400 font-mono mt-0.5">{formatDate(evt.created_at)}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="relative">
+                      <span className="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-slate-300 border border-white" />
+                      <p className="text-xs font-black text-slate-600">Policy Draft Issued</p>
+                      <p className="text-[10px] text-slate-400 font-mono mt-0.5">{formatDate(selectedPolicyForDetail.created_at)}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Documents Section */}
+              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-3">Verified Documents</h4>
+                <div className="grid sm:grid-cols-2 gap-3 text-xs">
+                  <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-100">
+                    <span className="font-semibold text-slate-700 truncate max-w-[150px]">Title_Deed_Signed.pdf</span>
+                    <button className="text-bima-green font-bold hover:underline">Download</button>
+                  </div>
+                  <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-slate-100">
+                    <span className="font-semibold text-slate-700 truncate max-w-[150px]">ID_Verification.pdf</span>
+                    <button className="text-bima-green font-bold hover:underline">Download</button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </AnimatePresence>
+      )}
     </div>
   );
 }

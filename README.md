@@ -156,7 +156,7 @@ Technology: Smart contract + escrow
 - Docker 24.0+
 - Docker Compose 2.20+
 - Python 3.10+
-- Rust 1.70+
+- Rust 1.88+
 - Node.js 18+
 - PostgreSQL 15 client tools
 

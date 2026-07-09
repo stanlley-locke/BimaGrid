@@ -35,11 +35,14 @@ RUN addgroup --system --gid 1005 gateway \
 
 WORKDIR /app
 
-COPY --from=deps    /app/node_modules ./node_modules
-COPY --from=builder /app/dist         ./dist
+# Pre-create logs directory and set ownership
+RUN mkdir -p /app/logs && chown -R gateway:gateway /app
+
+COPY --chown=gateway:gateway --from=deps    /app/node_modules ./node_modules
+COPY --chown=gateway:gateway --from=builder /app/dist         ./dist
 
 # Copy package.json for runtime metadata
-COPY api/gateway/package.json ./
+COPY --chown=gateway:gateway api/gateway/package.json ./
 
 ENV NODE_ENV=production \
     PORT=3001

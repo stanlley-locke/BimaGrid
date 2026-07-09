@@ -22,12 +22,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok(c) => c,
         Err(e) => {
             eprintln!("Warning: Failed to load config file: {}. Using fallback defaults.", e);
-            // Fallback config for testing/demo (reusable private key)
-            config::Config {
+            // Fallback config for testing/demo (Hardhat account #1, pre-funded on local node)
+            let mut config = config::Config {
                 node: config::NodeConfig {
                     id: "oracle-1".to_string(),
                     data_sources: vec!["open-meteo".to_string()],
-                    signing_key: "0x47e175b104810481048104810481048104810481048104810481048104810481".to_string(),
+                    // Hardhat account #1 (pre-funded on local node)
+                    signing_key: "0x59c6995e998f97a5a0044966f0945389dc9b86e40d15d15f30bbd85d890c1531".to_string(),
                     backend_url: Some("http://localhost:50051".to_string()),
                 },
                 blockchain: config::BlockchainConfig {
@@ -39,7 +40,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     evaluation_time: "23:00".to_string(),
                     timezone: "Africa/Nairobi".to_string(),
                 },
-            }
+            };
+            config.apply_env_overrides();
+            config
         }
     };
 

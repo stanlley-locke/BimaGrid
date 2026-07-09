@@ -4,13 +4,14 @@
 [node]
 id = "oracle-1"
 # gRPC endpoint for the Django backend
-backend_url = "http://localhost:50051"
+backend_url = "http://backend:50051"
 data_sources = ["open-meteo", "nasa-power", "chirps"]
-# secp256k1 private key (hex) — NEVER commit a real key
-signing_key = "0x47e175b104810481048104810481048104810481048104810481048104810481"
+# secp256k1 private key (hex) — NEVER commit a real production key
+# Local dev: Hardhat account #1 (0x70997970C51812dc3A010C7d01b50e0d17dc79C8, 10000 ETH on fresh node)
+signing_key = "0x59c6995e998f97a5a0044966f0945389dc9b86e40d15d15f30bbd85d890c1531"
 
 [blockchain]
-rpc_url = "http://localhost:8545"
+rpc_url = "http://hardhat:8545"
 contract_address = "0x5FbDB2315678afecb367f032d93F642f64180aa3"
 gas_limit = 500000
 

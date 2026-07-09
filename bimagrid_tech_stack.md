@@ -111,7 +111,7 @@ The stack is deliberately heterogeneous, using the best tool for each plane of t
 
 ### Core Language
 
-- Rust 1.74.0 (Stable)
+- Rust 1.88.0+ (Stable)
   - Rationale: Memory safety, zero-cost abstractions, async performance
 
 ### Async Runtime

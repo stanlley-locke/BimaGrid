@@ -70,6 +70,11 @@ class RegistrationSerializer(serializers.Serializer):
 	national_id = serializers.CharField(max_length=64, required=False, allow_blank=True)
 	role = serializers.ChoiceField(choices=Profile.Role.choices, required=False)
 	preferred_language = serializers.ChoiceField(choices=Profile.Language.choices, required=False)
+	ward_code = serializers.CharField(max_length=32, required=False, allow_blank=True)
+	crop = serializers.CharField(max_length=32, required=False, allow_blank=True)
+	acreage = serializers.DecimalField(max_digits=8, decimal_places=2, required=False)
+	mpesa_number = serializers.CharField(max_length=32, required=False, allow_blank=True)
+	h3_index = serializers.CharField(max_length=32, required=False, allow_blank=True)
 
 	def validate_username(self, value: str) -> str:
 		if User.objects.filter(username__iexact=value).exists():
@@ -83,6 +88,12 @@ class RegistrationSerializer(serializers.Serializer):
 
 	@transaction.atomic
 	def create(self, validated_data):
+		ward_code = validated_data.pop("ward_code", "")
+		crop = validated_data.pop("crop", "")
+		acreage = validated_data.pop("acreage", None)
+		mpesa_number = validated_data.pop("mpesa_number", "")
+		h3_index = validated_data.pop("h3_index", "")
+
 		profile_data = {
 			"full_name": validated_data.pop("full_name", ""),
 			"phone_number": validated_data.pop("phone_number", ""),
@@ -92,7 +103,64 @@ class RegistrationSerializer(serializers.Serializer):
 		}
 		password = validated_data.pop("password")
 		user = User.objects.create_user(password=password, **validated_data)
-		sync_profile_fields(user, profile_data)
+		profile = sync_profile_fields(user, profile_data)
+
+		# Automatically set up onboarding, land parcel, and policies if user is a farmer
+		if profile.role == Profile.Role.FARMER:
+			from apps.onboarding.models import FarmerOnboarding, LandParcel
+			from apps.onboarding.constants import OnboardingStatus
+			from decimal import Decimal
+			
+			onboarding, _ = FarmerOnboarding.objects.get_or_create(profile=profile)
+			onboarding.ward_code = ward_code
+			onboarding.crop = crop
+			onboarding.acreage = acreage if acreage is not None else Decimal("0.0")
+			onboarding.mpesa_number = mpesa_number
+			
+			request = self.context.get("request")
+			if request and request.user.is_authenticated:
+				creator_profile = getattr(request.user, "profile", None)
+				if creator_profile and creator_profile.role == Profile.Role.BROKER:
+					onboarding.assigned_agent = creator_profile
+			
+			onboarding.status = OnboardingStatus.SUBMITTED
+			onboarding.save()
+			
+			if h3_index:
+				LandParcel.objects.get_or_create(
+					onboarding=onboarding,
+					h3_index=h3_index,
+					defaults={
+						"name": "Primary Farm Parcel",
+						"ward_code": ward_code,
+						"acreage": onboarding.acreage,
+						"is_primary": True,
+						"verified": True
+					}
+				)
+				
+				# Generate active policy using the pricing engine
+				from apps.policies.services import issue_policy
+				from apps.pricing.engine import calculate_premium
+				from datetime import date, timedelta
+				
+				pricing = calculate_premium(crop.upper(), onboarding.acreage, h3_index, [])
+				policy_data = {
+					"crop": crop.upper(),
+					"insured_acreage": onboarding.acreage,
+					"coverage_h3": h3_index,
+					"premium_amount": pricing["final_premium"],
+					"coverage_start": date.today(),
+					"coverage_end": date.today() + timedelta(days=180),
+				}
+				policy = issue_policy(onboarding, policy_data)
+				from apps.policies.services import activate_policy
+				activate_policy(policy)
+				
+				# Trigger welcome notification delivery via SMS & Email
+				from apps.notifications.tasks import send_farmer_welcome_notifications
+				send_farmer_welcome_notifications.delay(user.id, password)
+				
 		return user
 
 

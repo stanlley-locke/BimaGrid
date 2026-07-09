@@ -196,14 +196,45 @@ export const dashboardApi = {
   },
 
   async registerFarmer(payload: RegisterFarmerPayload): Promise<User> {
-    return authApi.register({
-      username: payload.username,
-      email: payload.email,
-      password: payload.password,
-      full_name: payload.full_name,
-      phone_number: payload.phone_number,
-      role: 'farmer',
-    });
+    return apiRequest<User>(
+      '/accounts/register/',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          ...payload,
+          role: 'farmer',
+        }),
+      },
+      true,
+    );
+  },
+
+  async getCounties(): Promise<{ id: string; external_id: number; name: string }[]> {
+    const data = await apiRequest<{ id: string; external_id: number; name: string }[] | PaginatedResponse<{ id: string; external_id: number; name: string }>>('/geography/counties/');
+    return normalizeList(data);
+  },
+
+  async getSubcounties(countyId: string): Promise<{ id: string; external_id: number; name: string }[]> {
+    const data = await apiRequest<{ id: string; external_id: number; name: string }[] | PaginatedResponse<{ id: string; external_id: number; name: string }>>(`/geography/counties/${countyId}/subcounties/`);
+    return normalizeList(data);
+  },
+
+  async getConstituencies(subcountyId: string): Promise<{ id: string; external_id: number; name: string }[]> {
+    const data = await apiRequest<{ id: string; external_id: number; name: string }[] | PaginatedResponse<{ id: string; external_id: number; name: string }>>(`/geography/subcounties/${subcountyId}/constituencies/`);
+    return normalizeList(data);
+  },
+
+  async getWards(constituencyId: string): Promise<{ id: string; external_id: number; ward_code: string; name: string }[]> {
+    const data = await apiRequest<{ id: string; external_id: number; ward_code: string; name: string }[] | PaginatedResponse<{ id: string; external_id: number; ward_code: string; name: string }>>(`/geography/wards/?constituency_id=${constituencyId}`);
+    return normalizeList(data);
+  },
+
+  async getRainfall(h3Index: string): Promise<{ h3_index: string; metric: string; value: number }> {
+    return apiRequest<{ h3_index: string; metric: string; value: number }>(`/satellite/rainfall/?h3_index=${h3Index}`);
+  },
+
+  async getNdvi(h3Index: string): Promise<{ h3_index: string; metric: string; value: number }> {
+    return apiRequest<{ h3_index: string; metric: string; value: number }>(`/satellite/ndvi/?h3_index=${h3Index}`);
   },
 
   async simulateDrought(payload: SimulateDroughtPayload): Promise<Record<string, unknown>> {

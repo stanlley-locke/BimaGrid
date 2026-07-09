@@ -17,6 +17,12 @@ class PolicyEventSerializer(serializers.ModelSerializer):
 
 class PolicySerializer(serializers.ModelSerializer):
 	events = PolicyEventSerializer(many=True, read_only=True)
+	farmer_name = serializers.CharField(source="onboarding.profile.full_name", read_only=True)
+	farmer_phone = serializers.CharField(source="onboarding.profile.phone_number", read_only=True)
+	ward_name = serializers.CharField(source="onboarding.ward.name", read_only=True, default=None)
+	constituency_name = serializers.CharField(source="onboarding.ward.constituency.name", read_only=True, default=None)
+	subcounty_name = serializers.CharField(source="onboarding.ward.subcounty.name", read_only=True, default=None)
+	county_name = serializers.CharField(source="onboarding.ward.subcounty.county.name", read_only=True, default=None)
 
 	class Meta:
 		model = Policy
@@ -24,6 +30,8 @@ class PolicySerializer(serializers.ModelSerializer):
 			"id",
 			"onboarding",
 			"policy_number",
+			"farmer_name",
+			"farmer_phone",
 			"crop",
 			"insured_acreage",
 			"coverage_h3",
@@ -36,6 +44,10 @@ class PolicySerializer(serializers.ModelSerializer):
 			"events",
 			"created_at",
 			"updated_at",
+			"ward_name",
+			"constituency_name",
+			"subcounty_name",
+			"county_name",
 		]
 		read_only_fields = ["id", "created_at", "updated_at"]
 

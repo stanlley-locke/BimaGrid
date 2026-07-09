@@ -198,14 +198,20 @@ class UssdInternalClaimView(APIView):
 				}
 			)
 
+		from apps.core.utils import build_reference_code
+		claim = Claim.objects.create(
+			policy=policy,
+			claim_number=build_reference_code("CLM"),
+			loss_type=loss_type,
+			description=request.data.get("description", "Filed via USSD"),
+			claimed_amount=policy.premium_amount * Decimal("5.0"),
+			status=Claim.Status.SUBMITTED
+		)
 		return Response(
 			{
-				"status": "automatic",
-				"policy_number": policy.policy_number,
-				"loss_type": loss_type,
-				"message": (
-					"Parametric claims are automatic. No manual filing needed when drought "
-					f"is detected for policy {policy.policy_number}."
-				),
+				"status": "created",
+				"claim_number": claim.claim_number,
+				"claim_status": claim.status,
+				"message": f"Claim {claim.claim_number} submitted! Policy: {policy.policy_number}. Status: SUBMITTED.",
 			}
 		)
