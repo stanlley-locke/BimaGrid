@@ -1,18 +1,26 @@
+# Web Framework & API
 Django>=4.2,<5
 djangorestframework
 django-cors-headers
 django-environ
 django-filter
+whitenoise>=6.6.0
+gunicorn>=21.2.0
+
+# Database & Task Queues
 psycopg[binary]
 redis
 celery
+django-celery-beat>=2.5.0
+
+# Processing & Crypto
 pillow>=10.2.0
-whitenoise>=6.6.0
-grpcio>=1.62.0
-grpcio-tools>=1.62.0
+web3
+cryptography>=41.0
 h3>=4.3
 requests>=2.31
-cryptography>=41.0
 phonenumbers>=8.13
-gunicorn>=21.2.0
-django-celery-beat>=2.5.0
+
+# gRPC
+grpcio>=1.62.0
+grpcio-tools>=1.62.0

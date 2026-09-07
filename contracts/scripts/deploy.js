@@ -42,6 +42,25 @@ async function main() {
   await tx2.wait();
   console.log("EscrowVault ownership transferred to KilimaShieldOracle");
 
+  // 6. Authorize oracle nodes (Hardhat dev accounts #1–#3 for local 3-node consensus)
+  const devOracleAddresses = [
+    "0x70997970C51812dc3A010C7d01b50e0d17dc79C8", // Hardhat account #1
+    "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC", // Hardhat account #2
+    "0x90F79bf6EB2c4f870365E785982E1f101E93b906", // Hardhat account #3
+  ];
+  for (const oracleAddr of devOracleAddresses) {
+    const tx = await oracle.setAuthorizedOracle(oracleAddr, true);
+    await tx.wait();
+    console.log("Authorized oracle signer:", oracleAddr);
+  }
+
+  // 7. Allow KilimaShieldOracle to call registry + escrow
+  const authTx1 = await policyRegistry.setAuthorizedCaller(oracleAddress, true);
+  await authTx1.wait();
+  const authTx2 = await escrowVault.setAuthorizedCaller(oracleAddress, true);
+  await authTx2.wait();
+  console.log("KilimaShieldOracle authorized on PolicyRegistry and EscrowVault");
+
   console.log("Deployment and configuration completed successfully!");
 }
 

@@ -2,3 +2,4 @@
 gunicorn
 uvicorn
 whitenoise
+web3

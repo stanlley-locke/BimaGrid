@@ -13,7 +13,12 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
         libpq-dev \
-        curl
+        curl \
+        libjpeg-dev \
+        zlib1g-dev \
+        libpng-dev \
+        libssl-dev \
+        libffi-dev
 
 RUN python -m venv /opt/venv
 ENV PATH=/opt/venv/bin:$PATH
